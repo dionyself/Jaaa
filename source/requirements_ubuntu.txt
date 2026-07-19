@@ -1,0 +1,17 @@
+# Requirements
+libclthreads-dev
+libclxclient-dev
+libfftw3-dev
+libzita-alsa-pcmi-dev
+libjack-dev
+
+# if not libjack-dev then libjack-jackd2-dev
+
+# Build
+make
+
+# Install to tmp location
+DESTDIR=/tmp/jaaa_build make install
+
+# Run on card 0
+/tmp/jaaa_build/usr/local/bin/jaaa -A -d hw:0
