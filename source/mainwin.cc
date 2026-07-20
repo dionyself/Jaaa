@@ -408,30 +408,25 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             set_param (HOSTF); 
             break;
 
-        case DMOD:
-            _demod_mode = (_demod_mode + 1) % 2;
+    case DMOD:
+        _demod_mode = (_demod_mode + 1) % 2;
             
-            // Usamos los estados visuales nativos del botón para dar feedback (0=Apagado, 1=Habilitado, 2=Resaltado)
-            _butt[DMOD]->set_stat(_demod_mode); 
+        // Colors indicator
+        _butt[DMOD]->set_stat(_demod_mode); 
             
-            // --- NUEVA LÓGICA DE AUTO-ESCALA DEL EJE HORIZONTAL ---
-            if (_demod_mode != 0) // if we are un LSB mode (1)
-            {
-                _f0 = 0.0f;
-                _f1 = _host_freq;
-            }
-            else // If We are in Normal Mode (0)
-            {
-                _f0 = 0.0f;
-                _f1 = 22000.0f;
-            }
-
-            _spect->_f0 = _f0;
-            _spect->_f1 = _f1;
-
-            // Using 'redraw()' instead 'update()' 
-            redraw ();
-            break;
+        if (_demod_mode != 0) // if we are un LSB mode (1)
+        {
+            _f0 = 0.0f;
+            set_f1(_host_freq);
+            set_bw(0.37f);
+        }
+        else // If We are in Normal Mode (0)
+        {
+            _f0 = 0.0f;
+            set_f1(_fmax);
+            set_bw(46.88f);
+        }
+        break;
 	}
         break;
     }
@@ -775,7 +770,7 @@ void Mainwin::set_fc (float f)
 
 void Mainwin::set_fs (float f)
 {
-    if (f < 0.001 * (_fmax - _fmin)) f = 0.001 * (_fmax - _fmin);
+    if (f < 0.00001 * (_fmax - _fmin)) f = 0.00001 * (_fmax - _fmin);
     _f0 = _fc - 0.5 * f;   
     _f1 = _fc + 0.5 * f;   
     if (_f0 < _fmin) { _f0 = _fmin; _f1 = 2 * _fc - _f0; }
@@ -1238,7 +1233,7 @@ void Mainwin::alloc_fft (Spectdata *S)
     {
 	if (_fftplan) fftwf_destroy_plan (_fftplan);
         S->_bits |= Spectdata::RESET;
-        // DFT real-to-complejo in 1 optimized dimension
+        // DFT real-to-complex in 1 optimized dimension
         _fftplan = fftwf_plan_dft_r2c_1d (_fftlen = k, _fftbuf, _trbuf + 4, FFTW_ESTIMATE);
         _ipmod = k / (2 * INP_LEN);
         if (_ipmod < 1) _ipmod = 1;

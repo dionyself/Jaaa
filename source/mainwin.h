@@ -33,8 +33,8 @@
 #define YPOS  100
 #define XMIN  600
 #define YMIN  430
-#define XDEF  600
-#define YDEF  450
+#define XDEF  1200
+#define YDEF  900
 #define XMAX  1200
 #define YMAX  900
 #define LMAR  40
