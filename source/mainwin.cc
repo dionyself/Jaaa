@@ -117,13 +117,12 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [AMAX]  = new X_tbutton (this, this, &Bst1, x, y, "Max", 0, AMAX);
     y += Bst1.size.y;
     _butt [ASPAN] = new X_tbutton (this, this, &Bst1, x, y, "Range", 0, ASPAN);
+    y += Bst1.size.y + 25;
+
+    _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Mix Freq", 0, HOSTF);
     y += Bst1.size.y;
-    // NUEVO: Instanciamos el botón para configurar la frecuencia portadora
-    _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Host F", 0, HOSTF);
-    y += Bst1.size.y;
-    // NUEVO: Instanciamos el botón para cambiar el modo de demodulación
-    _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Demod", 0, DMOD);
-    y += Bst1.size.y;
+    _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Norm/LSB", 0, DMOD);
+    y += Bst1.size.y + 25;
 
     // Text input
     _txt1 = new X_textip (this, this, &Tst1, x, y, RMAR - 6, 18, 16);
@@ -494,13 +493,17 @@ void Mainwin::redraw (void)
     D.drawstring ("Frequency", -1);
     D.move (_xs - RMAR + 2, 338);
     D.drawstring ("Amplitude", -1);
-    D.move (_xs - RMAR + 2, 465);
-    D.drawstring ("Output", -1);
+    D.move (_xs - RMAR + 2, 395);
+    D.drawstring ("Heterodyning", -1);
+    D.move (_xs - RMAR + 2, 455);
+    D.drawstring ("Curr value", -1);
     D.move (_xs - RMAR + 2, 525);
+    D.drawstring ("Output", -1);
+    D.move (_xs - RMAR + 2, 585);
     D.drawstring ("Noise", -1);
-    D.move (_xs - RMAR + 2, 572);
+    D.move (_xs - RMAR + 2, 632);
     D.drawstring ("Sine1", -1);
-    D.move (_xs - RMAR + 2, 635);
+    D.move (_xs - RMAR + 2, 695);
     D.drawstring ("Sine2", -1);
 
     plot_fscale ();
