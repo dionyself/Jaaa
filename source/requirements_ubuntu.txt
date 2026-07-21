@@ -1,11 +1,21 @@
-# Requirements
+# Dev Requirements (sudo apt install <pkg name>)
 libclthreads-dev
 libclxclient-dev
 libfftw3-dev
 libzita-alsa-pcmi-dev
 libjack-dev
 
-# if not libjack-dev then libjack-jackd2-dev
+# If  libjack-dev is not available,
+# try libjack-jackd2-dev
+
+# Ignore your local changes to Makefile
+git update-index --skip-worktree Makefile
+
+# Edit your Makefile to optimize your local compilation
+# uncomment the line "CXXFLAGS += -march=native"
+
+# clean
+make clean
 
 # Build
 make
