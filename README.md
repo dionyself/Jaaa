@@ -1,4 +1,10 @@
-JAAA -- Quick manual
+## JAAA: About this version
+
+This is a modified version of JACK ALSA AUDIO ANALYZER (JAAA by Fons Adriaensen),  
+I made some changes to add support for [SimpleQuakeSensor Hardware](https://github.com/dionyself/SimpleQuakeSensor)  
+and analyze ULTRA LOW FREQUENCY (ULF).  
+
+## JAAA -- Quick manual
 ____________________
 
 
@@ -77,8 +83,11 @@ a maxumum of 1000 iterations. Changing the input or bandwidth resets and restart
 the averaging.
 
 'Freeze' freezes the analyser, but not the display, so you can still scroll and
-zoom or use the markers discussed below.
+zoom or use the markers discussed below.  
 
+Low frecuency + LSB mode (Heterodyning):
+`Mix Freq` sets  the host frequency (defaults to 500 Hz).  
+`Norm/LSB` Switch between normal and LSB mode
 
 Markers
 -------
