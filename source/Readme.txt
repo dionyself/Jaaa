@@ -13,6 +13,9 @@ git update-index --skip-worktree Makefile
 
 # Edit your Makefile to optimize your local compilation
 # uncomment the line "CXXFLAGS += -march=native"
+# also you may want to change optimizatio level -O3 to -O2
+#-CXXFLAGS += -O3 -Wall
+#-CXXFLAGS += -O2 -Wall
 
 # clean
 make clean
