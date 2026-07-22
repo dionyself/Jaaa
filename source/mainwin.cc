@@ -288,10 +288,8 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         if (_demod_mode != 0)
                         {
                             _f0 = 0.0f;
-                            _f1 = _host_freq;
-
-                            _spect->_f0 = _f0;
-                            _spect->_f1 = _f1;
+                            set_f1(_host_freq);
+                            set_param (HOSTF);
                         }
 
                         redraw ();    
@@ -418,12 +416,14 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             _f0 = 0.0f;
             set_f1(_host_freq);
             set_bw(0.37f);
+            set_param (BANDW);
         }
         else // If We are in Normal Mode (0)
         {
             _f0 = 0.0f;
             set_f1(_fmax);
             set_bw(46.88f);
+            set_param (BANDW);
         }
         break;
 	}
@@ -1375,10 +1375,8 @@ void Mainwin::calc_spect (Spectdata *S)
 {
     int   i, j, k;
     float dc, dd, fc, p, pp, pm;
+    float f_real_end;
     
-    float f_disp_start, f_disp_end;
-    float f_real_start, f_real_end;
-
     dc = _fsamp / (2 * _fftlen);
     dd = (S->_f1 - S->_f0) / (S->_npix - 1); // Píxel resolution
     
@@ -1386,47 +1384,73 @@ void Mainwin::calc_spect (Spectdata *S)
     if (dd > dc) S->_bits |=  Spectdata::YM_VAL;
     else         S->_bits &= ~Spectdata::YM_VAL;
 
-    for (i = 0; i < S->_npix; i++)
-    {
-        f_disp_start = S->_f0 + (i - 0.5f) * dd;
-        f_disp_end   = S->_f0 + (i + 0.5f) * dd;
+    if (_demod_mode == 1) { // LSB Mode 
 
-        if (_demod_mode == 1) // LSB Mode 
-        {
-            // Invert values
-            f_real_start = _host_freq - f_disp_end;
-            f_real_end   = _host_freq - f_disp_start;
-        }
-        else // Normal Mode (0)
-        {
-            f_real_start = f_disp_start;
-            f_real_end   = f_disp_end;
-        }
-
-        j = (int)(ceil (f_real_start / dc)); 
-        if (j < 0) j = 0; // Prevent Segmentation Faults
-
-        fc = j * dc; 
-        pp = pm = 0;
+        // Calculate inicial frequency, based on the last pixel (LSB only)
+        float f_real_base = _host_freq - (S->_f0 + (S->_npix - 0.5f) * dd);
         
-        for (k = 0; fc < f_real_end; j++, fc += dc)
+        j = (int)(ceil (f_real_base / dc)); 
+        if (j < 0) j = 0;
+        fc = j * dc;
+
+        // Reverse iterator
+        for (i = S->_npix - 1; i >= 0; i--)
         {
-            if (j > _fftlen) break;
-            p = _power [j];
-            if (p > pp) pp = p; 
-            pm += p;
-            k++;
+            f_real_end = _host_freq - (S->_f0 + (i - 0.5f) * dd);
+            pp = pm = 0;
+            
+            for (k = 0; fc < f_real_end; j++, fc += dc)
+            {
+                if (j > _fftlen) break;
+                p = _power [j];
+                if (p > pp) pp = p; 
+                pm += p;
+                k++;
+            }
+            
+            if (k)
+            {
+                S->_yp [i] = pp;
+                S->_ym [i] = pm / k;
+            }
+            else
+            {
+                S->_yp [i] = -1;
+                S->_ym [i] = -1;
+            }
         }
+    } else { // Normal Mode (0)
         
-        if (k)
+        float f0 = S->_f0 - 0.5f * dd;
+        
+        j = (int)(ceil (f0 / dc)); 
+        if (j < 0) j = 0;
+        fc = j * dc;
+
+        for (i = 0; i < S->_npix; i++)
         {
-            S->_yp [i] = pp;
-            S->_ym [i] = pm / k;
-        }
-        else
-        {
-            S->_yp [i] = -1;
-            S->_ym [i] = -1;
+            float fd = f0 + (i + 1) * dd;
+            pp = pm = 0;
+            
+            for (k = 0; fc < fd; j++, fc += dc)
+            {
+                if (j > _fftlen) break;
+                p = _power [j];
+                if (p > pp) pp = p; 
+                pm += p;
+                k++;
+            }
+            
+            if (k)
+            {
+                S->_yp [i] = pp;
+                S->_ym [i] = pm / k;
+            }
+            else
+            {
+                S->_yp [i] = -1;
+                S->_ym [i] = -1;
+            }
         }
     }
 
@@ -1458,7 +1482,7 @@ void Mainwin::calc_noise (float *f, float *p)
 }
 
 
-// Interpol eact spikes using parabolic on near bins
+// Interpol each spikes using parabolic on near bins
 void Mainwin::calc_peak (float *f, float *p, float r)
 {
     int    i, j, k, n;
