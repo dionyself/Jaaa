@@ -1,6 +1,10 @@
-JAAA -- Quick manual
-____________________
+## JAAA: About this version
 
+This is a modified version of JACK ALSA AUDIO ANALYZER (JAAA by Fons Adriaensen),  
+I made some changes to add support for [SimpleQuakeSensor Hardware](https://github.com/dionyself/SimpleQuakeSensor)  
+and analyze ULTRA LOW FREQUENCY (ULF).  
+
+### Quick manual
 
 Some buttons will light up yellow when you click on them,
 and there will be at most one of those active at any time.
@@ -12,14 +16,11 @@ cases can be modified in a number of ways:
 - by using the mouse wheel,
 - by mouse gestures inside the display area.
 
-Input
------
+### Input
 
-Select on of the four inputs.
+Select on of the 4 inputs.
 
-
-Frequency and Amplitude
------------------------
+### Frequency and Amplitude
 
 Frequency:
 
@@ -53,8 +54,7 @@ and automatic selection of the axis based on the direction of the
 mouse gesture.
  
 
-Analyser
---------
+### Analyser
 
 The analyser is based on a windowed FFT. Actually the windowing is performed
 by convolution after the FFT, and combined with interpolation. The windowing
@@ -77,11 +77,14 @@ a maxumum of 1000 iterations. Changing the input or bandwidth resets and restart
 the averaging.
 
 'Freeze' freezes the analyser, but not the display, so you can still scroll and
-zoom or use the markers discussed below.
+zoom or use the markers discussed below.  
 
+Low frecuency + LSB mode (Heterodyning):
+`Mix Freq` sets  the host frequency (defaults to 500 Hz).  
+`Norm/LSB` Switch between normal and LSB mode
 
-Markers
--------
+### Markers
+
 
 Markers are used in order to accurately read off values in the display. There can be
 up to two markers, set by clicking at the desired frequency inside the display.
