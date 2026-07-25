@@ -20,6 +20,8 @@
 
 
 #include <math.h>
+#include <cstring>
+#include <fstream>
 #include "audio.h"
 #include "messages.h"
 
@@ -35,6 +37,11 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _nplay (8),
     _input (-1),
     _data (0),
+    _demulated_data (nullptr),
+    _demulated_decimated_data (nullptr),
+    _demod_decimation(100), // Decimation defaults to 100
+    _decim_counter(0),
+    _decim_ind(0),
     _outs (0)
 {
 }
@@ -42,9 +49,21 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
 
 Audio::~Audio (void)
 {
+    if (_wav_file.is_open ()) _wav_file.close ();
     if (_run_alsa) close_alsa ();
     if (_run_jack) close_jack ();
     delete[] _outs;
+    if (_demulated_data != nullptr) {
+        delete[] _demulated_data;
+        //fftwf_free(_demulated_data);
+        _demulated_data = nullptr;
+    }
+
+    if (_demulated_decimated_data != nullptr) {
+        delete[] _demulated_decimated_data;
+        //fftwf_free(_demulated_decimated_data);
+        _demulated_decimated_data = nullptr;
+    }
 }
 
 
@@ -65,6 +84,122 @@ void Audio::init (void)
     _a_sine2 = 0.0;
     _f_sine2 = 0.0;
     _p_sine2 = 0.0;
+
+    _wav_sample_count = 0;
+    _demod_phase = 0.0;
+    _demod_phase_inc = 0.0;
+    _demod_decimation = 100;
+    init_lpf_filter(_fsamp);
+}
+
+
+void Audio::init_lpf_filter (float sample_rate)
+{
+    _demod_phase_inc = 2.0 * M_PI * 500.0 / sample_rate;
+    _filter_stage1.setLowPass (sample_rate, 35.0);
+    _filter_stage2.setLowPass (sample_rate, 35.0);
+}
+
+void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples)
+{
+
+    for (int i = 0; i < num_samples; i++)
+    {
+        double lo_signal = cos (_demod_phase);
+        _demod_phase += _demod_phase_inc;
+        if (_demod_phase > 2.0 * M_PI) _demod_phase -= 2.0 * M_PI;
+
+        double mixed = input_buffer[i] * lo_signal;
+
+        double filtered1 = _filter_stage1.process (mixed);
+        double final_filtered = _filter_stage2.process (filtered1);
+
+        output_buffer_demulated[i] = (float) final_filtered;
+
+        if (_decim_counter % _demod_decimation == 0)
+        {
+            _demulated_decimated_data[_decim_ind] = (float) final_filtered;
+            _decim_ind++;
+
+            // Decimated buffer becomes a ring buffer
+            if (_decim_ind >= (_size / _demod_decimation)) {
+                _decim_ind = 0; 
+            }
+            
+            if (_wav_file.is_open ())
+            {
+                write_sample_to_wav ((float) final_filtered);
+            }
+        }
+        _decim_counter++;
+    }
+}
+
+bool Audio::start_wav_recording (const char* filename, float original_sample_rate, int decimation_factor)
+{
+    _wav_file.open (filename, std::ios::binary);
+    if (!_wav_file.is_open ()) return false;
+
+    _wav_sample_count = 0;
+    _demod_decimation = decimation_factor;
+
+    _demod_phase = 0.0;
+    //init_lpf_filter (original_sample_rate);
+
+    char dummy_header[44] = {0};
+    _wav_file.write (dummy_header, 44);
+
+    return true;
+}
+
+void Audio::write_sample_to_wav (float sample)
+{
+    if (!_wav_file.is_open ()) return;
+
+    if (sample > 1.0f) sample = 1.0f;
+    if (sample < -1.0f) sample = -1.0f;
+
+    int16_t int_sample = (int16_t) (sample * 32767.0f);
+
+    _wav_file.write (reinterpret_cast<char*> (&int_sample), sizeof (int16_t));
+
+    _wav_sample_count++;
+}
+
+void Audio::stop_wav_recording (float original_sample_rate)
+{
+    if (!_wav_file.is_open ()) return;
+
+    int subchunk2_size = _wav_sample_count * 2;
+    int chunk_size = 36 + subchunk2_size;
+    int sample_rate = (int) (original_sample_rate);
+    int byte_rate = sample_rate * 2;
+
+    _wav_file.seekp (0, std::ios::beg);
+
+    _wav_file.write ("RIFF", 4);
+    _wav_file.write (reinterpret_cast<char*> (&chunk_size), 4);
+    _wav_file.write ("WAVE", 4);
+
+    _wav_file.write ("fmt ", 4);
+    int subchunk1_size = 16;
+    int16_t audio_format = 1;
+    int16_t num_channels = 1;
+    int16_t bits_per_sample = 16;
+    int16_t block_align = num_channels * (bits_per_sample / 8);
+
+    _wav_file.write (reinterpret_cast<char*> (&subchunk1_size), 4);
+    _wav_file.write (reinterpret_cast<char*> (&audio_format), 2);
+    _wav_file.write (reinterpret_cast<char*> (&num_channels), 2);
+    _wav_file.write (reinterpret_cast<char*> (&sample_rate), 4);
+    _wav_file.write (reinterpret_cast<char*> (&byte_rate), 4);
+    _wav_file.write (reinterpret_cast<char*> (&block_align), 2);
+    _wav_file.write (reinterpret_cast<char*> (&bits_per_sample), 2);
+
+    _wav_file.write ("data", 4);
+    _wav_file.write (reinterpret_cast<char*> (&subchunk2_size), 4);
+
+    _wav_file.close ();
 }
 
 
@@ -135,6 +270,8 @@ void Audio::thr_main (void)
 		    {
 			if (_input < 0) memset (_data + _dind, 0, n * sizeof (float));
 			else _alsa_handle->capt_chan (_input, _data + _dind, n);
+            // TODO: Demulate here
+            demodulate_buffer(_data + _dind, _demulated_data + _dind, n);
 			_dind = 0;
 			m -= n;
 		    }
@@ -142,6 +279,8 @@ void Audio::thr_main (void)
 		    {
 			if (_input < 0) memset (_data + _dind, 0, m * sizeof (float));
 			else _alsa_handle->capt_chan (_input, _data + _dind, m);
+            // TODO: Demulate here
+            demodulate_buffer(_data + _dind, _demulated_data + _dind, m);
 			_dind += m;
 		    }
 		}
@@ -261,6 +400,8 @@ int Audio::jack_callback (jack_nframes_t nframes)
         if (m >= n)
 	{
             memcpy (_data + _dind, p, sizeof(jack_default_audio_sample_t) * n);
+            // Demulate and decimate here
+            demodulate_buffer(_data + _dind, _demulated_data + _dind, n);
             _dind = 0;
             p += n;
             m -= n;
@@ -268,6 +409,8 @@ int Audio::jack_callback (jack_nframes_t nframes)
         if (m)
 	{
             memcpy (_data + _dind, p, sizeof(jack_default_audio_sample_t) * m);
+            // Demulate and decimate here
+            demodulate_buffer(_data + _dind, _demulated_data + _dind, m);
             _dind += m;
 	}
         _scnt += nframes;
@@ -311,6 +454,35 @@ void Audio::process (void)
 	    _step = Z->_step; 
 	    _dind = 0;
 	    _scnt = 0;
+
+        // Free previous memory (prevent memory leaks if _size changes)
+        if (_demulated_data != nullptr) {
+            delete[] _demulated_data;
+            //fftwf_free(_demulated_data);
+            _demulated_data = nullptr;
+        }
+        if (_demulated_decimated_data != nullptr) {
+            delete[] _demulated_decimated_data;
+            //fftwf_free(_demulated_decimated_data);
+            _demulated_decimated_data = nullptr;
+        }
+
+        // New memory assigned
+        _demulated_data = new float[_size];
+        //_demulated_data = (float*) fftwf_malloc(sizeof(float) * _size)
+
+        // The decimated buffer size is the original size divided by decimation factor
+        int decimated_size = _size / _demod_decimation;
+        _demulated_decimated_data = new float[decimated_size];
+        //_demulated_decimated_data = (float*) fftwf_malloc(sizeof(decimated_size) * _size)
+
+        // Initialize buffers (Zeroed)
+        std::fill(_demulated_data, _demulated_data + _size, 0.0f);
+        std::fill(_demulated_decimated_data, _demulated_decimated_data + decimated_size, 0.0f);
+
+        // Restarting decimation indices
+        _decim_counter = 0;
+        _decim_ind = 0;
 	}
 	else if (M->type () == M_INPUT)
 	{

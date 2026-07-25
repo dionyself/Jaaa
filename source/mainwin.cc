@@ -415,14 +415,14 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
         {
             _f0 = 0.0f;
             set_f1(_host_freq);
-            set_bw(0.37f);
+            set_bw(5.859f);
             set_param (BANDW);
         }
         else // If We are in Normal Mode (0)
         {
             _f0 = 0.0f;
             set_f1(_fmax);
-            set_bw(46.88f);
+            set_bw(46.875f);
             set_param (BANDW);
         }
         break;
@@ -1270,28 +1270,29 @@ void Mainwin::handle_trig ()
     k = ++_ipcnt * INP_LEN;
     if (k == INP_MAX) _ipcnt = 0;
 
-    // process by pkg/lots if FFT need refresh (according _ipmod)
+    // Process by pkg/lots if FFT need refresh (according _ipmod)
     if (_ipcnt % _ipmod == 0)
     {
         if (_spect->_bits & Spectdata::FREEZE) return;
+        // TODO: Process, modify _ipbuf here
         // Prepare buffers
         if (k < _fftlen) 
-	{
-	    memcpy (_ipbuf + INP_MAX, _ipbuf, k * sizeof (float));
+	    {
+	        memcpy (_ipbuf + INP_MAX, _ipbuf, k * sizeof (float));
             k += INP_MAX;
-	}
-	memcpy (_fftbuf, _ipbuf + k - _fftlen, _fftlen * sizeof (float));
+	    }
+	    memcpy (_fftbuf, _ipbuf + k - _fftlen, _fftlen * sizeof (float));
         // Execute FFT
         fftwf_execute_dft_r2c (_fftplan, _fftbuf, _trbuf + 4);
         k = _fftlen / 2;
 
         for (i = 1; i <= 4; i++)
-	{
-	    _trbuf [4 - i][0] =  _trbuf [4 + i][0];
-	    _trbuf [4 - i][1] = -_trbuf [4 + i][1];
-	    _trbuf [4 + k + i][0] =  _trbuf [4 + k - i][0];
-	    _trbuf [4 + k + i][1] = -_trbuf [4 + k - i][1];
-	}
+	    {
+	       _trbuf [4 - i][0] =  _trbuf [4 + i][0];
+	       _trbuf [4 - i][1] = -_trbuf [4 + i][1];
+	       _trbuf [4 + k + i][0] =  _trbuf [4 + k - i][0];
+	       _trbuf [4 + k + i][1] = -_trbuf [4 + k - i][1];
+	    }
 
 	// Calculate window and pows
     if (_spect->_bits & Spectdata::RESET)
