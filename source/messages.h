@@ -36,6 +36,7 @@
 #define  M_INPUT  2
 #define  M_JINFO  3
 #define  M_GENPAR 4
+#define  M_FINFO  5
 
 
 class M_buffp : public ITC_mesg
@@ -51,6 +52,38 @@ public:
     float    *_data;
     int       _size;
     int       _step;
+};
+
+class M_finfo : public ITC_mesg
+{
+public:
+
+    M_finfo (const char *filename, time_t date_start, time_t date_end, int duration, int capture_type,  int file_type, int action, unsigned long fsamp, float host_freq, float cutoff_freq, int decimation_factor) : 
+    ITC_mesg (M_FINFO),
+        _rec_date_start (date_start),
+        _rec_date_end (date_end),
+        _rec_duration (duration),
+        _rec_capture_type (capture_type),
+        _rec_file_type (file_type),
+        _rec_fsamp (fsamp),
+        _rec_host_freq (host_freq),
+        _rec_cutoff_freq (cutoff_freq),
+        _rec_decimation_factor (decimation_factor) {
+            strncpy(_rec_filename, filename, 255);
+        }
+
+    char _rec_filename[256];
+    time_t _rec_date_start;
+    time_t _rec_date_end;
+    int _rec_duration;
+    int _rec_capture_type;
+    int _rec_file_type;
+    int _rec_action;
+    unsigned long _rec_fsamp;
+    float _rec_host_freq;
+    float _rec_cutoff_freq;
+    int _rec_decimation_factor;
+ 
 };
 
 class M_input : public ITC_mesg

@@ -74,7 +74,8 @@ public:
                      int fsamp, int frsize, int nfrags, int ncapt, int nplay);
     void  init_jack (const char *server);
 
-    bool  start_wav_recording (const char* filename, float original_sample_rate, int decimation_factor);
+    // WAV Recording control
+    bool  start_wav_recording (char _rec_filename[256], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor);
     void  stop_wav_recording (float original_sample_rate);
 
 private:
@@ -89,7 +90,7 @@ private:
     void  close_jack (void);
     void  jack_shutdown (void);
     int   jack_callback (jack_nframes_t nframes);
-    void  init_lpf_filter (float sample_rate);
+    void  init_lpf_filter (float sample_rate, float host_freq, float cutoff_freq);
     void  demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples);
     void  write_sample_to_wav (float sample);
 
@@ -111,12 +112,9 @@ private:
     int            _nplay;
     int            _input;
     float         *_data;
-    float         *_demulated_data;
-    float         *_demulated_decimated_data;
-    // Decimation vars
-    int _demod_decimation;
-    int _decim_counter;
-    int _decim_ind;
+
+    
+
     int            _dind;
     int            _size;
     int            _step;
@@ -133,12 +131,40 @@ private:
     float          _p_sine2;
     Rngen          _rngen;
 
+    // Output buffers
+    float         *_demulated_data;
+    float         *_demulated_decimated_data;
+    
+    // Decimation vars
+    int _demod_decimation;
+    int _decim_counter;
+    int _decim_ind;
+
+    // WAV recording vars
     std::ofstream   _wav_file;
     int             _wav_sample_count;
+
+    // Demulator/filter vars
     double          _demod_phase;
     double          _demod_phase_inc;
     BiquadLPF       _filter_stage1;
     BiquadLPF       _filter_stage2;
+    float           _host_freq;
+    float           _cutoff_freq;
+
+    // Rec/Dec/Dem/Fil State vars
+    bool _is_recording;
+    float _rec_duration;
+    time_t _rec_date_start;
+    time_t _rec_date_end;
+    int _rec_capture_type;
+    int _rec_file_type;
+    int _rec_action;
+    int _rec_decimation_factor;
+    char _rec_filename[256];
+    unsigned long _rec_fsamp;
+    float _rec_host_freq;
+    float _rec_cutoff_freq;
   
     static void jack_static_shutdown (void *arg);
     static int  jack_static_callback (jack_nframes_t nframes, void *arg);

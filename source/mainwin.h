@@ -27,6 +27,7 @@
 #include <clthreads.h>
 #include <fftw3.h>
 #include "styles.h"
+#include <ctime>
 
 
 #define XPOS  100
@@ -42,6 +43,24 @@
 #define TMAR  8
 #define BMAR  24
 
+class QuickTimer
+{
+private:
+    time_t date;
+    unsigned int counter;
+    const unsigned int INTERVAL;
+public:
+    QuickTimer(unsigned int interval = 10000) 
+        : date(time(nullptr)), counter(0), INTERVAL(interval) {}
+    time_t get_fast_date() {
+        counter++;
+        if (counter >= INTERVAL) {
+            date = time(nullptr);
+            counter = 0;
+        }
+        return date;
+    }
+};
 
 
 class Spectdata 
@@ -106,6 +125,8 @@ private:
         NSE_LEV, SI1_LEV, SI1_FREQ, SI2_LEV, SI2_FREQ,
         HOSTF,   // *
         DMOD,    // *
+        TIMER,   // *
+        REC_STOP,// *
         NBUTT
     };
 
@@ -165,6 +186,7 @@ private:
     void calc_noise (float *f, float *p);
     void calc_peak (float *f, float *p, float r);
     void print_note (char *s, float f);
+    void toggle_recording(void);
 
     int         _xs, _ys;
     int         _running;
@@ -177,6 +199,7 @@ private:
     X_textip   *_txt1;
     Spectdata  *_spect;
     ITC_ctrl   *_audio;
+    QuickTimer *_my_clock;
 
     int         _input;
     int         _drag;
@@ -208,7 +231,19 @@ private:
     const static char *_notes [12];
 
     float _host_freq;
+    float _cutoff_freq;
     int   _demod_mode;
+
+    
+    bool _is_recording;
+    float _rec_duration;
+    time_t _rec_date_start;
+    time_t _rec_date_end;
+    int _rec_capture_type;
+    int _rec_file_type;
+    int _rec_action;
+    int _rec_decimation_factor;
+    const char *_rec_fname_prefix;
 };
 
 

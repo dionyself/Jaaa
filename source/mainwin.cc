@@ -23,10 +23,12 @@
 #include <stdio.h>
 #include <clxclient.h>
 #include <X11/keysym.h>
+#include <ctime>
 #include <math.h>
 #include "styles.h"
 #include "mainwin.h"
 #include "messages.h"
+
 
 // Scale formating table
 const char *Mainwin::_formats [9] = { "%1.0f",  "%2.1f",  "%3.2f",
@@ -44,9 +46,24 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _audio (audio), _input (-1), _drag (0), _p_ind (-1), _ngx (0), _ngy (0), _fftplan (0), _fftlen (64),
     _host_freq (500.0f),
     _demod_mode (2)
+
 {
     int      x, y;
     X_hints  H;
+    _is_recording = false;
+
+    _rec_fname_prefix = "geological_record";
+    _rec_date_start = 0;
+    _rec_duration = 1.0f;
+    _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+    _rec_capture_type = 0;
+    _rec_file_type = 0;
+    _rec_action = 0;
+    _rec_decimation_factor = 100;
+
+    _cutoff_freq = 35.0f;
+
+    _my_clock = new QuickTimer(100);
 
     // Configure X11 protocols (Windows closing and focus)
     _atoms [0] = XInternAtom (dpy (), "WM_DELETE_WINDOW", True);
@@ -122,6 +139,10 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Mix Freq", 0, HOSTF);
     y += Bst1.size.y;
     _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Norm/LSB", 0, DMOD);
+    y += Bst1.size.y;
+    _butt [TIMER] = new X_tbutton (this, this, &Bst1, x, y, "Rec Timer", 0, TIMER);
+    y += Bst1.size.y;
+    _butt [REC_STOP] = new X_tbutton (this, this, &Bst1, x, y, "Rec/Stop", 0, REC_STOP);
     y += Bst1.size.y + 25;
 
     // Text input
@@ -295,6 +316,14 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         redraw ();    
                     }
                     break;
+                case TIMER: // Mapeando el valor escrito al timer
+                    if (_p_val >= 0.0f)
+                    {
+                        _rec_duration = _p_val;
+                        set_param(TIMER);
+                        redraw();
+                    }
+                    break;
 		        }
             }
 	    show_param ();
@@ -404,7 +433,12 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
     case HOSTF:
             set_param (HOSTF); 
             break;
-
+    case TIMER:
+            set_param (TIMER);
+            break;
+    case REC_STOP:
+            toggle_recording();
+            break;
     case DMOD:
         _demod_mode = (_demod_mode + 1) % 2;
             
@@ -684,6 +718,9 @@ void Mainwin::set_param (int i)
     case SI2_FREQ: _p_val = _f_si2; break;
     case HOSTF: 
         _p_val = _host_freq;
+        break;
+    case TIMER:
+        _p_val = _rec_duration;
         break;   
     default: _p_val = 0;
     }
@@ -923,6 +960,9 @@ void Mainwin::show_param (void)
         break;
 
     case HOSTF:
+        sprintf (s, "%8.2f", _p_val); 
+        break;
+    case TIMER:
         sprintf (s, "%8.2f", _p_val); 
         break; 
     }
@@ -1267,6 +1307,7 @@ void Mainwin::handle_trig ()
     int i, h, k;
     float  a, b, p, s, *pow;
 
+
     k = ++_ipcnt * INP_LEN;
     if (k == INP_MAX) _ipcnt = 0;
 
@@ -1334,6 +1375,19 @@ void Mainwin::handle_trig ()
         else   *pow = p;
         _ptot += 0.1f * (0.25f * s - _ptot) + 1e-20f;
 	update (); // Redraw now
+
+    if (_is_recording && (_rec_date_end > 0) && (_my_clock->get_fast_date() >= _rec_date_end))
+    {
+        toggle_recording();
+        fprintf(stderr, "(Auto stop)\n");
+    }
+
+    if (!_is_recording && (_rec_date_start > 0) && (_my_clock->get_fast_date() >= _rec_date_start))
+    {
+        toggle_recording();
+        fprintf(stderr, "(Auto start)\n");
+    }
+
     }
 }
 
@@ -1523,3 +1577,77 @@ void Mainwin::calc_peak (float *f, float *p, float r)
     *p = a * a;
 }
 
+void Mainwin::toggle_recording(void)
+{
+
+    M_finfo *rec_f_info = new M_finfo (_rec_fname_prefix, _rec_date_start, _rec_date_end, _rec_duration, _rec_capture_type, _rec_file_type, _rec_action, _fsamp, _host_freq, _cutoff_freq, _rec_decimation_factor);
+    rec_f_info->_rec_date_start = _rec_date_start;
+    rec_f_info->_rec_duration = _rec_duration;
+    rec_f_info->_rec_capture_type = 0;
+    rec_f_info->_rec_file_type = 0;
+    rec_f_info->_rec_action = 0;
+    rec_f_info->_rec_fsamp = _fsamp;
+    rec_f_info->_rec_decimation_factor = _rec_decimation_factor;
+
+    if (_is_recording)
+    {
+        _audio->put_event (EV_MESG, rec_f_info);
+        _is_recording = false;
+        _rec_date_end = 0;
+        _rec_date_start = 0;
+        _butt[REC_STOP]->set_stat(0);
+        fprintf(stderr, "Stoped Recording\n");
+        return;
+    }
+    else
+    {   
+
+        time_t now = _my_clock->get_fast_date();
+        _is_recording = true;
+        if (_rec_date_start == 0)
+        {
+            
+            if (_rec_duration > 0.59f)
+            {
+                _rec_date_end = now + (time_t)(_rec_duration * 60);
+            }
+            else if (0 < _rec_duration <= 0.59f)
+            {
+                _is_recording = false;
+                _rec_date_end = 0;
+                fprintf(stderr, "Invalid Timer/Duration\n");
+                return;
+            }
+            else
+            {
+                _rec_date_end = 0;
+                fprintf(stderr, "Record forever ...\n");
+            }
+        }
+        else if (_rec_date_start > now + (time_t)(0.59f * 60) && _rec_duration >= 0.59f && _rec_date_end == 0)
+        {
+            _is_recording = false;
+            _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+            fprintf(stderr, "Record scheduled\n");
+            return;
+        }
+
+        rec_f_info->_rec_date_end = _rec_date_end;
+        rec_f_info->_rec_action = 1;
+
+        struct tm *tm_info = localtime(&now);
+        char date_str[64];
+        char filename[128];
+        
+        // Formato: YYYYMMDD_HHMMSS
+        strftime(date_str, sizeof(date_str), "%Y%m%d_%H%M%S", tm_info); 
+        sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _rec_decimation_factor);
+        strncpy(rec_f_info->_rec_filename, filename, 255);
+        rec_f_info->_rec_date_start = now;
+        _rec_date_start = now;
+
+        _audio->put_event (EV_MESG, rec_f_info);
+        _butt[REC_STOP]->set_stat(2); // Button color GUI Update
+        fprintf(stderr, "Start Record command emited\n");
+    }
+}

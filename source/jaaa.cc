@@ -51,7 +51,8 @@ XrmOptionDescRec options [NOPTS] =
 static void help (void)
 {
     fprintf (stderr, "\nJaaa-%s\n\n", VERSION);
-    fprintf (stderr, "  (C) 2004-2010 Fons Adriaensen  <fons@kokkinizita.net>\n\n");
+    fprintf (stderr, "  (C) 2004-2010 Fons Adriaensen  <fons@kokkinizita.net>\n");
+    fprintf (stderr, "  (C) 2026 Dionys Rosario  <dionyself@gmail.com>\n\n");
     fprintf (stderr, "Options:\n");
     fprintf (stderr, "  -h                 Display this text\n");
     fprintf (stderr, "  -name <name>       Jack and X11 name\n");

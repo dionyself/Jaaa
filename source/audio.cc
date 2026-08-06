@@ -39,11 +39,25 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _data (0),
     _demulated_data (nullptr),
     _demulated_decimated_data (nullptr),
-    _demod_decimation(100), // Decimation defaults to 100
+    _demod_decimation(100),  // Decimation defaults to 100
     _decim_counter(0),
     _decim_ind(0),
     _outs (0)
 {
+    _is_recording = false;
+    _rec_duration = 0;
+    _rec_date_start = 0;
+    _rec_date_end = 0;
+    _rec_capture_type = 0;
+    _rec_file_type = 0;
+    _rec_action = 0;
+    _rec_decimation_factor = 100;
+    //_rec_filename = "";
+    _rec_fsamp = 0;
+    _rec_host_freq = 500.0;
+    _rec_cutoff_freq = 35.0;
+    _host_freq = 500.0;
+    _cutoff_freq = 35.0;
 }
 
 
@@ -55,13 +69,13 @@ Audio::~Audio (void)
     delete[] _outs;
     if (_demulated_data != nullptr) {
         delete[] _demulated_data;
-        //fftwf_free(_demulated_data);
+        // fftwf_free(_demulated_data); // if fftwf is used
         _demulated_data = nullptr;
     }
 
     if (_demulated_decimated_data != nullptr) {
         delete[] _demulated_decimated_data;
-        //fftwf_free(_demulated_decimated_data);
+        // fftwf_free(_demulated_decimated_data); // if fftwf is used
         _demulated_decimated_data = nullptr;
     }
 }
@@ -89,15 +103,15 @@ void Audio::init (void)
     _demod_phase = 0.0;
     _demod_phase_inc = 0.0;
     _demod_decimation = 100;
-    init_lpf_filter(_fsamp);
+    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
 }
 
 
-void Audio::init_lpf_filter (float sample_rate)
+void Audio::init_lpf_filter (float sample_rate, float host_freq, float cutoff_freq)
 {
-    _demod_phase_inc = 2.0 * M_PI * 500.0 / sample_rate;
-    _filter_stage1.setLowPass (sample_rate, 35.0);
-    _filter_stage2.setLowPass (sample_rate, 35.0);
+    _demod_phase_inc = 2.0 * M_PI * host_freq / sample_rate;
+    _filter_stage1.setLowPass (sample_rate, cutoff_freq);
+    _filter_stage2.setLowPass (sample_rate, cutoff_freq);
 }
 
 void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples)
@@ -114,6 +128,7 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
         double filtered1 = _filter_stage1.process (mixed);
         double final_filtered = _filter_stage2.process (filtered1);
 
+        // Here output_buffer_demulated is _demulated_data
         output_buffer_demulated[i] = (float) final_filtered;
 
         if (_decim_counter % _demod_decimation == 0)
@@ -126,7 +141,7 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
                 _decim_ind = 0; 
             }
             
-            if (_wav_file.is_open ())
+            if (_is_recording)
             {
                 write_sample_to_wav ((float) final_filtered);
             }
@@ -135,8 +150,9 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
     }
 }
 
-bool Audio::start_wav_recording (const char* filename, float original_sample_rate, int decimation_factor)
+bool Audio::start_wav_recording (char filename[256], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor)
 {
+    fprintf (stderr, "start_wav_recording llamada\n");
     _wav_file.open (filename, std::ios::binary);
     if (!_wav_file.is_open ()) return false;
 
@@ -144,7 +160,7 @@ bool Audio::start_wav_recording (const char* filename, float original_sample_rat
     _demod_decimation = decimation_factor;
 
     _demod_phase = 0.0;
-    //init_lpf_filter (original_sample_rate);
+    init_lpf_filter (original_sample_rate, host_freq, cutoff_freq);
 
     char dummy_header[44] = {0};
     _wav_file.write (dummy_header, 44);
@@ -154,7 +170,11 @@ bool Audio::start_wav_recording (const char* filename, float original_sample_rat
 
 void Audio::write_sample_to_wav (float sample)
 {
-    if (!_wav_file.is_open ()) return;
+    if (!_wav_file.is_open ())
+    {
+        _is_recording = false;
+        return;
+    }
 
     if (sample > 1.0f) sample = 1.0f;
     if (sample < -1.0f) sample = -1.0f;
@@ -162,12 +182,15 @@ void Audio::write_sample_to_wav (float sample)
     int16_t int_sample = (int16_t) (sample * 32767.0f);
 
     _wav_file.write (reinterpret_cast<char*> (&int_sample), sizeof (int16_t));
-
     _wav_sample_count++;
 }
 
 void Audio::stop_wav_recording (float original_sample_rate)
 {
+    fprintf (stderr, "stop_wav_recording llamada\n");
+    _is_recording = false;
+    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
+
     if (!_wav_file.is_open ()) return;
 
     int subchunk2_size = _wav_sample_count * 2;
@@ -270,7 +293,7 @@ void Audio::thr_main (void)
 		    {
 			if (_input < 0) memset (_data + _dind, 0, n * sizeof (float));
 			else _alsa_handle->capt_chan (_input, _data + _dind, n);
-            // TODO: Demulate here
+            // Demulate here
             demodulate_buffer(_data + _dind, _demulated_data + _dind, n);
 			_dind = 0;
 			m -= n;
@@ -279,7 +302,7 @@ void Audio::thr_main (void)
 		    {
 			if (_input < 0) memset (_data + _dind, 0, m * sizeof (float));
 			else _alsa_handle->capt_chan (_input, _data + _dind, m);
-            // TODO: Demulate here
+            // Demulate here
             demodulate_buffer(_data + _dind, _demulated_data + _dind, m);
 			_dind += m;
 		    }
@@ -333,7 +356,7 @@ void Audio::init_jack (const char *server)
 
     if (jack_activate (_jack_handle))
     {
-        fprintf(stderr, "Can't activate JACK");
+        fprintf(stderr, "Can't activate JACK\n");
         exit (1);
     }
     _run_jack = true;
@@ -500,6 +523,35 @@ void Audio::process (void)
             _a_sine2  = pow (10.0, 0.05 * Z->_a_sine2);
             _f_sine2  = LSINE * Z->_f_sine2 / _fsamp; 
 	}
+    else if (M->type () == M_FINFO)
+    {
+        M_finfo *Z = (M_finfo *) M; 
+            
+        // Update Rec/Dec/Dem/Fil State vars
+        //_rec_filename = Z->_rec_filename;
+        strncpy(_rec_filename, Z->_rec_filename, 255);
+        _rec_duration = Z->_rec_duration;
+        _rec_date_start = Z->_rec_date_start;
+        _rec_date_end = Z->_rec_date_end;
+        _rec_capture_type = Z->_rec_capture_type;
+        _rec_file_type = Z->_rec_file_type;
+        _rec_action = Z->_rec_action;
+        _rec_decimation_factor = Z->_rec_decimation_factor;
+        _rec_fsamp = Z->_rec_fsamp;
+        _rec_host_freq = Z->_rec_host_freq;
+        _rec_cutoff_freq = Z->_rec_cutoff_freq;
+
+
+        if (_rec_action == 1)
+        {
+            _is_recording = start_wav_recording (_rec_filename, _rec_fsamp, _rec_host_freq, _rec_cutoff_freq, _rec_decimation_factor);
+        }
+        if (_rec_action == 0)
+        {
+            stop_wav_recording (_rec_fsamp);
+        }
+
+    }
 	M->recover ();
     }
 }
