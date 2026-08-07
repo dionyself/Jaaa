@@ -154,7 +154,7 @@ private:
     void motion (XPointerMovedEvent *);
     void brelse (XButtonEvent *);
 
-    void set_fsamp (float fsamp, bool symm);
+    void set_fsamp (unsigned int fsamp, bool symm);
     void set_input (int i);
     void set_output (int i);
     void set_param (int i);

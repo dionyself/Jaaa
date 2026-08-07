@@ -58,7 +58,7 @@ class M_finfo : public ITC_mesg
 {
 public:
 
-    M_finfo (const char *filename, time_t date_start, time_t date_end, int duration, int capture_type,  int file_type, int action, unsigned long fsamp, float host_freq, float cutoff_freq, int decimation_factor) : 
+    M_finfo (const char *filename, time_t date_start, time_t date_end, int duration, int capture_type,  int file_type, int action, unsigned int fsamp, float host_freq, float cutoff_freq, int decimation_factor) : 
     ITC_mesg (M_FINFO),
         _rec_date_start (date_start),
         _rec_date_end (date_end),
@@ -81,7 +81,7 @@ public:
     int _rec_capture_type;
     int _rec_file_type;
     int _rec_action;
-    unsigned long _rec_fsamp;
+    unsigned int _rec_fsamp;
     float _rec_host_freq;
     float _rec_cutoff_freq;
     int _rec_decimation_factor;
@@ -103,13 +103,13 @@ class M_jinfo : public ITC_mesg
 {
 public:
 
-    M_jinfo (unsigned long fsamp, unsigned long fsize, const char *jname) :
+    M_jinfo (unsigned int fsamp, unsigned long fsize, const char *jname) :
         ITC_mesg (M_JINFO),
         _fsamp (fsamp),
 	_fsize (fsize),
         _jname (jname) {}
 
-    unsigned long _fsamp;
+    unsigned int _fsamp;
     unsigned long _fsize;
     const char   *_jname;
 };

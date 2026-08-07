@@ -106,9 +106,9 @@ void Audio::init (void)
 }
 
 
-void Audio::init_lpf_filter (float sample_rate, float host_freq, float cutoff_freq)
+void Audio::init_lpf_filter (unsigned int sample_rate, float host_freq, float cutoff_freq)
 {
-    _demod_phase_inc = 2.0 * M_PI * host_freq / sample_rate;
+    _demod_phase_inc = 2.0 * M_PI * host_freq / static_cast<double>(sample_rate);
     _filter_stage1.setLowPass (sample_rate, cutoff_freq);
     _filter_stage2.setLowPass (sample_rate, cutoff_freq);
 }
@@ -226,7 +226,7 @@ void Audio::stop_wav_recording (float original_sample_rate)
 
 
 void Audio::init_alsa (const char *playdev, const char *captdev, 
-                       int fsamp, int fsize, int nfrags, int ncapt, int nplay)
+                       unsigned int fsamp, int fsize, int nfrags, int ncapt, int nplay)
 {
     _run_alsa = true;
     _alsa_handle = new Alsa_pcmi (playdev, captdev, 0, fsamp, fsize, nfrags);
@@ -540,7 +540,7 @@ void Audio::process (void)
         _rec_host_freq = Z->_rec_host_freq;
         _rec_cutoff_freq = Z->_rec_cutoff_freq;
 
-        fprintf(stderr, "We received filename: %s fsamp: %lu host_freq: %.2f cutoff: %.2f decimation: %d\n",
+        fprintf(stderr, "We received filename: %s fsamp: %u host_freq: %.2f cutoff: %.2f decimation: %d\n",
         _rec_filename, 
         _rec_fsamp, 
         _rec_host_freq, 

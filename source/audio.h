@@ -71,7 +71,7 @@ public:
     virtual ~Audio (void);
 
     void  init_alsa (const char *playdev, const char *captdev,
-                     int fsamp, int frsize, int nfrags, int ncapt, int nplay);
+                     unsigned int fsamp, int frsize, int nfrags, int ncapt, int nplay);
     void  init_jack (const char *server);
 
     // WAV Recording control
@@ -90,7 +90,7 @@ private:
     void  close_jack (void);
     void  jack_shutdown (void);
     int   jack_callback (jack_nframes_t nframes);
-    void  init_lpf_filter (float sample_rate, float host_freq, float cutoff_freq);
+    void  init_lpf_filter (unsigned int sample_rate, float host_freq, float cutoff_freq);
     void  demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples);
     void  write_sample_to_wav (float sample);
 
@@ -106,7 +106,7 @@ private:
     jack_port_t    *_jack_out [8];
 
     bool           _active;
-    unsigned long  _fsamp;
+    unsigned int  _fsamp;
     unsigned long  _fsize;
     int            _ncapt;
     int            _nplay;
@@ -162,7 +162,7 @@ private:
     int _rec_action;
     int _rec_decimation_factor;
     char _rec_filename[128];
-    unsigned long _rec_fsamp;
+    unsigned int _rec_fsamp;
     float _rec_host_freq;
     float _rec_cutoff_freq;
   

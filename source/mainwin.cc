@@ -705,7 +705,7 @@ void Mainwin::brelse (XButtonEvent *E)
 }
 
 
-void Mainwin::set_fsamp (float fsamp, bool symm)
+void Mainwin::set_fsamp (unsigned int fsamp, bool symm)
 {
     _fsamp = fsamp;
     _fmin = 0;
@@ -1375,7 +1375,7 @@ void Mainwin::handle_mesg (ITC_mesg *M)
     if (M->type () == M_JINFO)
     {
 	M_jinfo *Z = (M_jinfo *) M;
-        set_fsamp ((float)(Z->_fsamp), false);
+        set_fsamp (Z->_fsamp, false);
         sprintf (s, "%s-%s  [%s]", PROGNAME, VERSION, Z->_jname);
         x_set_title (s);
         _ipcnt = 0;
