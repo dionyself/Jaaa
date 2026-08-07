@@ -37,12 +37,12 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _nplay (8),
     _input (-1),
     _data (0),
+    _outs (0),
     _demulated_data (nullptr),
     _demulated_decimated_data (nullptr),
-    _demod_decimation(100),  // Decimation defaults to 100
+    _demod_decimation(100),
     _decim_counter(0),
-    _decim_ind(0),
-    _outs (0)
+    _decim_ind(0)
 {
     _is_recording = false;
     _rec_duration = 0;
@@ -52,7 +52,6 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _rec_file_type = 0;
     _rec_action = 0;
     _rec_decimation_factor = 100;
-    //_rec_filename = "";
     _rec_fsamp = 0;
     _rec_host_freq = 500.0;
     _rec_cutoff_freq = 35.0;
@@ -152,7 +151,7 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
 
 bool Audio::start_wav_recording (char filename[256], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor)
 {
-    fprintf (stderr, "start_wav_recording llamada\n");
+    fprintf (stderr, "start_wav_recording ...\n");
     _wav_file.open (filename, std::ios::binary);
     if (!_wav_file.is_open ()) return false;
 
@@ -187,7 +186,7 @@ void Audio::write_sample_to_wav (float sample)
 
 void Audio::stop_wav_recording (float original_sample_rate)
 {
-    fprintf (stderr, "stop_wav_recording llamada\n");
+    fprintf (stderr, "stop_wav_recording ...\n");
     _is_recording = false;
     init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
 
@@ -373,11 +372,11 @@ void Audio::init_jack (const char *server)
     }
 
     _outs = new float [4096];
-    init ();
     
     _fsamp = jack_get_sample_rate (_jack_handle);
     _fsize = jack_get_buffer_size (_jack_handle);
     _jname = jack_get_client_name (_jack_handle);
+    init ();
     _cmain->put_event (EV_MESG, new M_jinfo (_fsamp, _fsize, _jname));
     _active = true;
 }
@@ -528,8 +527,8 @@ void Audio::process (void)
         M_finfo *Z = (M_finfo *) M; 
             
         // Update Rec/Dec/Dem/Fil State vars
-        //_rec_filename = Z->_rec_filename;
-        strncpy(_rec_filename, Z->_rec_filename, 255);
+        strncpy(_rec_filename, Z->_rec_filename, 126);
+        _rec_filename[127] = '\0';
         _rec_duration = Z->_rec_duration;
         _rec_date_start = Z->_rec_date_start;
         _rec_date_end = Z->_rec_date_end;
@@ -541,6 +540,12 @@ void Audio::process (void)
         _rec_host_freq = Z->_rec_host_freq;
         _rec_cutoff_freq = Z->_rec_cutoff_freq;
 
+        fprintf(stderr, "We received filename: %s fsamp: %lu host_freq: %.2f cutoff: %.2f decimation: %d\n",
+        _rec_filename, 
+        _rec_fsamp, 
+        _rec_host_freq, 
+        _rec_cutoff_freq, 
+        _rec_decimation_factor);
 
         if (_rec_action == 1)
         {

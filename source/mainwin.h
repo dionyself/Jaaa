@@ -125,6 +125,9 @@ private:
         NSE_LEV, SI1_LEV, SI1_FREQ, SI2_LEV, SI2_FREQ,
         HOSTF,   // *
         DMOD,    // *
+        REC_DEC,
+        CUTOFF,
+        SCHED,   // *
         TIMER,   // *
         REC_STOP,// *
         NBUTT
@@ -236,6 +239,7 @@ private:
 
     
     bool _is_recording;
+    bool _rec_scheduled;
     float _rec_duration;
     time_t _rec_date_start;
     time_t _rec_date_end;

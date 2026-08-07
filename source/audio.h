@@ -161,7 +161,7 @@ private:
     int _rec_file_type;
     int _rec_action;
     int _rec_decimation_factor;
-    char _rec_filename[256];
+    char _rec_filename[128];
     unsigned long _rec_fsamp;
     float _rec_host_freq;
     float _rec_cutoff_freq;

@@ -65,14 +65,16 @@ public:
         _rec_duration (duration),
         _rec_capture_type (capture_type),
         _rec_file_type (file_type),
+        _rec_action (action),
         _rec_fsamp (fsamp),
         _rec_host_freq (host_freq),
         _rec_cutoff_freq (cutoff_freq),
         _rec_decimation_factor (decimation_factor) {
-            strncpy(_rec_filename, filename, 255);
+            strncpy(_rec_filename, filename, 126);
+            _rec_filename[127] = '\0';
         }
 
-    char _rec_filename[256];
+    char _rec_filename[128];
     time_t _rec_date_start;
     time_t _rec_date_end;
     int _rec_duration;

@@ -51,6 +51,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     int      x, y;
     X_hints  H;
     _is_recording = false;
+    _rec_scheduled = false;
 
     _rec_fname_prefix = "geological_record";
     _rec_date_start = 0;
@@ -131,18 +132,30 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [FSPAN] = new X_tbutton (this, this, &Bst1, x, y, "Span", 0, FSPAN);
     y += Bst1.size.y + 25;
 
+    // Amplitude controls
     _butt [AMAX]  = new X_tbutton (this, this, &Bst1, x, y, "Max", 0, AMAX);
     y += Bst1.size.y;
     _butt [ASPAN] = new X_tbutton (this, this, &Bst1, x, y, "Range", 0, ASPAN);
     y += Bst1.size.y + 25;
 
+    // Heterodyning
     _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Mix Freq", 0, HOSTF);
     y += Bst1.size.y;
     _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Norm/LSB", 0, DMOD);
+    y += Bst1.size.y + 25;
+
+    // Demulating
+    _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decim F", 0, REC_DEC);
     y += Bst1.size.y;
-    _butt [TIMER] = new X_tbutton (this, this, &Bst1, x, y, "Rec Timer", 0, TIMER);
+    _butt [CUTOFF] = new X_tbutton (this, this, &Bst1, x, y, "Cutoff F", 0, CUTOFF);
+    y += Bst1.size.y + 25;
+
+    // Recording
+    _butt [SCHED] = new X_tbutton (this, this, &Bst1, x, y, "Start Time", 0, SCHED);
     y += Bst1.size.y;
-    _butt [REC_STOP] = new X_tbutton (this, this, &Bst1, x, y, "Rec/Stop", 0, REC_STOP);
+    _butt [TIMER] = new X_tbutton (this, this, &Bst1, x, y, "Duration", 0, TIMER);
+    y += Bst1.size.y;
+    _butt [REC_STOP] = new X_tbutton (this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
     y += Bst1.size.y + 25;
 
     // Text input
@@ -316,8 +329,41 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         redraw ();    
                     }
                     break;
-                case TIMER: // Mapeando el valor escrito al timer
-                    if (_p_val >= 0.0f)
+                case REC_DEC:
+                    if (_p_val >= 1.0f) // Validación (asumiendo que el factor de decimación mínimo es 1)
+                    {
+                        _rec_decimation_factor = (int)_p_val; 
+                        set_param(REC_DEC);
+                        redraw();
+                    }
+                    break;
+                    
+                case CUTOFF:
+                    if (_p_val >= 0.0f) // Validación básica de frecuencia
+                    {
+                        _cutoff_freq = _p_val;
+                        set_param(CUTOFF);
+                        redraw();
+                    }
+                    break;
+                case SCHED:
+                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled))
+                    {
+                        //_rec_date_start = _p_val;
+                        if (_p_val == 0.0f)
+                        {
+                            _rec_date_start = _p_val;
+                        }
+                        else
+                        {
+                            _rec_date_start = _my_clock->get_fast_date() + (time_t)(_p_val * 60);
+                        }
+                        set_param(SCHED);
+                        redraw();
+                    }
+                    break;
+                case TIMER:
+                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled))
                     {
                         _rec_duration = _p_val;
                         set_param(TIMER);
@@ -433,6 +479,15 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
     case HOSTF:
             set_param (HOSTF); 
             break;
+    case REC_DEC:
+            set_param (REC_DEC);
+            break;
+    case CUTOFF:
+            set_param (CUTOFF);
+            break;
+    case SCHED:
+            set_param (SCHED);
+            break;
     case TIMER:
             set_param (TIMER);
             break;
@@ -530,14 +585,18 @@ void Mainwin::redraw (void)
     D.move (_xs - RMAR + 2, 395);
     D.drawstring ("Heterodyning", -1);
     D.move (_xs - RMAR + 2, 455);
+    D.drawstring ("Demulating", -1);
+    D.move (_xs - RMAR + 2, 515);
+    D.drawstring ("Recorder", -1);
+    D.move (_xs - RMAR + 2, 590);
     D.drawstring ("Curr value", -1);
-    D.move (_xs - RMAR + 2, 525);
+    D.move (_xs - RMAR + 2, 660);
     D.drawstring ("Output", -1);
-    D.move (_xs - RMAR + 2, 585);
+    D.move (_xs - RMAR + 2, 725);
     D.drawstring ("Noise", -1);
-    D.move (_xs - RMAR + 2, 632);
+    D.move (_xs - RMAR + 2, 770);
     D.drawstring ("Sine1", -1);
-    D.move (_xs - RMAR + 2, 695);
+    D.move (_xs - RMAR + 2, 835);
     D.drawstring ("Sine2", -1);
 
     plot_fscale ();
@@ -719,6 +778,15 @@ void Mainwin::set_param (int i)
     case HOSTF: 
         _p_val = _host_freq;
         break;
+    case REC_DEC:
+        _p_val = (float)_rec_decimation_factor;
+        break;
+    case CUTOFF:
+        _p_val = _cutoff_freq;
+        break;
+    case SCHED:
+        _p_val = _rec_date_start;
+        break; 
     case TIMER:
         _p_val = _rec_duration;
         break;   
@@ -962,8 +1030,24 @@ void Mainwin::show_param (void)
     case HOSTF:
         sprintf (s, "%8.2f", _p_val); 
         break;
-    case TIMER:
+    case REC_DEC:
+        sprintf (s, "%8.0f", _p_val); 
+        break;
+    case CUTOFF:
         sprintf (s, "%8.2f", _p_val); 
+        break;
+    case SCHED:
+        if (_p_val > 0)
+        {
+            sprintf (s, "%8.2f mins", ((time_t)_p_val - _my_clock->get_fast_date()) / 60.0 );
+        }
+        else
+        {
+            sprintf (s, "%8.2f", _p_val);
+        }
+        break;
+    case TIMER:
+        sprintf (s, "%8.2f mins", _p_val); 
         break; 
     }
     _txt1->set_text (s);
@@ -1382,7 +1466,7 @@ void Mainwin::handle_trig ()
         fprintf(stderr, "(Auto stop)\n");
     }
 
-    if (!_is_recording && (_rec_date_start > 0) && (_my_clock->get_fast_date() >= _rec_date_start))
+    if (!_is_recording && _rec_scheduled && (_rec_date_start > 0) && (_my_clock->get_fast_date() >= _rec_date_start))
     {
         toggle_recording();
         fprintf(stderr, "(Auto start)\n");
@@ -1588,11 +1672,13 @@ void Mainwin::toggle_recording(void)
     rec_f_info->_rec_action = 0;
     rec_f_info->_rec_fsamp = _fsamp;
     rec_f_info->_rec_decimation_factor = _rec_decimation_factor;
+    rec_f_info->_rec_host_freq = _host_freq;
 
     if (_is_recording)
     {
         _audio->put_event (EV_MESG, rec_f_info);
         _is_recording = false;
+        _rec_scheduled = false;
         _rec_date_end = 0;
         _rec_date_start = 0;
         _butt[REC_STOP]->set_stat(0);
@@ -1604,6 +1690,7 @@ void Mainwin::toggle_recording(void)
 
         time_t now = _my_clock->get_fast_date();
         _is_recording = true;
+        _rec_scheduled = false;
         if (_rec_date_start == 0)
         {
             
@@ -1611,7 +1698,7 @@ void Mainwin::toggle_recording(void)
             {
                 _rec_date_end = now + (time_t)(_rec_duration * 60);
             }
-            else if (0 < _rec_duration <= 0.59f)
+            else if (0 < _rec_duration && _rec_duration  <= 0.59f)
             {
                 _is_recording = false;
                 _rec_date_end = 0;
@@ -1628,6 +1715,7 @@ void Mainwin::toggle_recording(void)
         {
             _is_recording = false;
             _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+            _rec_scheduled = true;
             fprintf(stderr, "Record scheduled\n");
             return;
         }
@@ -1642,7 +1730,8 @@ void Mainwin::toggle_recording(void)
         // Formato: YYYYMMDD_HHMMSS
         strftime(date_str, sizeof(date_str), "%Y%m%d_%H%M%S", tm_info); 
         sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _rec_decimation_factor);
-        strncpy(rec_f_info->_rec_filename, filename, 255);
+        strncpy(rec_f_info->_rec_filename, filename, 126);
+        rec_f_info->_rec_filename[127] = '\0';
         rec_f_info->_rec_date_start = now;
         _rec_date_start = now;
 
