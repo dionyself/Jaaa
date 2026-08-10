@@ -104,7 +104,6 @@ void Audio::init (void)
     _demod_phase = 0.0;
     _demod_phase_inc = 0.0;
     _demod_decimation = 100;
-    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
 }
 
 
@@ -501,6 +500,8 @@ void Audio::process (void)
 	    _data = Z->_data;
 	    _size = Z->_size;
 	    _step = Z->_step;
+        _rec_host_freq = Z->_rec_host_freq;
+        _rec_cutoff_freq = Z->_rec_cutoff_freq;
         _rec_decimation_factor = Z->_decimation_factor;
 	    _dind = 0;
 	    _scnt = 0;
@@ -532,6 +533,8 @@ void Audio::process (void)
         // Restarting decimation indices
         _decim_counter = 0;
         _decim_ind = 0;
+
+        init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
 	}
 	else if (M->type () == M_INPUT)
 	{
@@ -551,38 +554,55 @@ void Audio::process (void)
 	}
     else if (M->type () == M_FINFO)
     {
-        M_finfo *Z = (M_finfo *) M; 
-            
-        // Update Rec/Dec/Dem/Fil State vars
-        strncpy(_rec_filename, Z->_rec_filename, 126);
-        _rec_filename[127] = '\0';
-        _rec_duration = Z->_rec_duration;
-        _rec_date_start = Z->_rec_date_start;
-        _rec_date_end = Z->_rec_date_end;
-        _rec_capture_type = Z->_rec_capture_type;
-        _rec_file_type = Z->_rec_file_type;
+        M_finfo *Z = (M_finfo *) M;
         _rec_action = Z->_rec_action;
-        _rec_decimation_factor = Z->_rec_decimation_factor;
-        _rec_fsamp = Z->_rec_fsamp;
-        _rec_host_freq = Z->_rec_host_freq;
-        _rec_cutoff_freq = Z->_rec_cutoff_freq;
+        _is_recording = false;
 
-        fprintf(stderr, "We received filename: %s fsamp: %u host_freq: %.2f cutoff: %.2f decimation: %d\n",
-        _rec_filename, 
-        _rec_fsamp, 
-        _rec_host_freq, 
-        _rec_cutoff_freq, 
-        _rec_decimation_factor);
-
-        if (_rec_action == 1)
+        if (_rec_action == 2)
         {
+            // Update Dec/Dem/Fil State vars
+            _rec_decimation_factor = Z->_rec_decimation_factor;
+            _rec_host_freq = Z->_rec_host_freq;
+            _rec_cutoff_freq = Z->_rec_cutoff_freq;
+            init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
+        } else if (_rec_action == 1)
+        {
+            // Update Rec/Dec/Dem/Fil State vars
+            strncpy(_rec_filename, Z->_rec_filename, 126);
+            _rec_filename[127] = '\0';
+            _rec_duration = Z->_rec_duration;
+            _rec_date_start = Z->_rec_date_start;
+            _rec_date_end = Z->_rec_date_end;
+            _rec_capture_type = Z->_rec_capture_type;
+            _rec_file_type = Z->_rec_file_type;
+            _rec_action = Z->_rec_action;
+            _rec_decimation_factor = Z->_rec_decimation_factor;
+            _rec_fsamp = Z->_rec_fsamp;
+            _rec_host_freq = Z->_rec_host_freq;
+            _rec_cutoff_freq = Z->_rec_cutoff_freq;
+            fprintf(stderr, "We are proccesing filename: %s fsamp: %u host_freq: %.2f cutoff: %.2f decimation: %d\n",
+                Z->_rec_filename, 
+                Z->_rec_fsamp, 
+                Z->_rec_host_freq, 
+                Z->_rec_cutoff_freq, 
+                Z->_rec_decimation_factor);
             _is_recording = start_wav_recording (_rec_filename, _rec_fsamp, _rec_host_freq, _rec_cutoff_freq, _rec_decimation_factor);
-        }
-        if (_rec_action == 0)
-        {
+        } else if (_rec_action == 0){
+            // Update Rec/Dec/Dem/Fil State vars
+            strncpy(_rec_filename, Z->_rec_filename, 126);
+            _rec_filename[127] = '\0';
+            _rec_duration = Z->_rec_duration;
+            _rec_date_start = Z->_rec_date_start;
+            _rec_date_end = Z->_rec_date_end;
+            _rec_capture_type = Z->_rec_capture_type;
+            _rec_file_type = Z->_rec_file_type;
+            _rec_action = Z->_rec_action;
+            _rec_decimation_factor = Z->_rec_decimation_factor;
+            _rec_fsamp = Z->_rec_fsamp;
+            _rec_host_freq = Z->_rec_host_freq;
+            _rec_cutoff_freq = Z->_rec_cutoff_freq;
             stop_wav_recording (_rec_filename, _rec_fsamp);
         }
-
     }
 	M->recover ();
     }

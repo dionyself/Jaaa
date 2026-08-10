@@ -1380,7 +1380,7 @@ void Mainwin::handle_mesg (ITC_mesg *M)
         sprintf (s, "%s-%s  [%s]", PROGNAME, VERSION, Z->_jname);
         x_set_title (s);
         _ipcnt = 0;
-        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _rec_decimation_factor));     
+        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _host_freq, _cutoff_freq, _rec_decimation_factor));     
     }
     M->recover ();
 }
