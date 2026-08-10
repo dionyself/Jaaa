@@ -248,6 +248,7 @@ private:
     int _rec_action;
     int _rec_decimation_factor;
     const char *_rec_fname_prefix;
+    char _rec_filename[128];
 };
 
 

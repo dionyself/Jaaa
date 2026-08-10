@@ -54,6 +54,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _rec_scheduled = false;
 
     _rec_fname_prefix = "geological_record";
+    //_rec_filename =
     _rec_date_start = 0;
     _rec_duration = 1.0f;
     _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
@@ -316,7 +317,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 case SI2_LEV:  set_a_si2 (_p_val); break;
                 case SI2_FREQ: set_f_si2 (_p_val); break;
                 case HOSTF:
-                    if (_p_val >= 0.0f) // Validation
+                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validation
                     {
                         _host_freq = _p_val;
                         if (_demod_mode != 0)
@@ -330,7 +331,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case REC_DEC:
-                    if (_p_val >= 1.0f) // Validación (asumiendo que el factor de decimación mínimo es 1)
+                    if (_p_val >= 1.0f && !(_is_recording or _rec_scheduled)) // Validación (asumiendo que el factor de decimación mínimo es 1)
                     {
                         _rec_decimation_factor = (int)_p_val; 
                         set_param(REC_DEC);
@@ -339,7 +340,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     break;
                     
                 case CUTOFF:
-                    if (_p_val >= 0.0f) // Validación básica de frecuencia
+                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validación básica de frecuencia
                     {
                         _cutoff_freq = _p_val;
                         set_param(CUTOFF);
@@ -1379,7 +1380,7 @@ void Mainwin::handle_mesg (ITC_mesg *M)
         sprintf (s, "%s-%s  [%s]", PROGNAME, VERSION, Z->_jname);
         x_set_title (s);
         _ipcnt = 0;
-        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN));     
+        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _rec_decimation_factor));     
     }
     M->recover ();
 }
@@ -1676,6 +1677,8 @@ void Mainwin::toggle_recording(void)
 
     if (_is_recording)
     {
+        strncpy(rec_f_info->_rec_filename, _rec_filename, 125);
+        rec_f_info->_rec_filename[126] = '\0';
         _audio->put_event (EV_MESG, rec_f_info);
         _is_recording = false;
         _rec_scheduled = false;
@@ -1730,6 +1733,8 @@ void Mainwin::toggle_recording(void)
         // Formato: YYYYMMDD_HHMMSS
         strftime(date_str, sizeof(date_str), "%Y%m%d_%H%M%S", tm_info); 
         sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _rec_decimation_factor);
+        strncpy(_rec_filename, filename, 126);
+        _rec_filename[127] = '\0';
         strncpy(rec_f_info->_rec_filename, filename, 126);
         rec_f_info->_rec_filename[127] = '\0';
         rec_f_info->_rec_date_start = now;

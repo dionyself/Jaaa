@@ -24,6 +24,8 @@
 #include <fstream>
 #include "audio.h"
 #include "messages.h"
+#include <ctime>
+#include <iostream>
 
 
 Audio::Audio (ITC_ctrl *cmain, const char *name) :
@@ -40,7 +42,7 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _outs (0),
     _demulated_data (nullptr),
     _demulated_decimated_data (nullptr),
-    _demod_decimation(100),
+    _demod_decimation(1),
     _decim_counter(0),
     _decim_ind(0)
 {
@@ -116,6 +118,7 @@ void Audio::init_lpf_filter (unsigned int sample_rate, float host_freq, float cu
 void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples)
 {
 
+    if (_demod_decimation <= 0) _demod_decimation = 1;
     for (int i = 0; i < num_samples; i++)
     {
         double lo_signal = cos (_demod_phase);
@@ -127,7 +130,7 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
         double filtered1 = _filter_stage1.process (mixed);
         double final_filtered = _filter_stage2.process (filtered1);
 
-        // Here output_buffer_demulated is _demulated_data
+        // Here output_buffer_demulated is expected to be the _demulated_data buffer
         output_buffer_demulated[i] = (float) final_filtered;
 
         if (_decim_counter % _demod_decimation == 0)
@@ -143,55 +146,49 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
             if (_is_recording)
             {
                 write_sample_to_wav ((float) final_filtered);
+                //std::cout << "_size: " << _size << ", _demod_decimation: " << _demod_decimation << "\n";
             }
         }
         _decim_counter++;
     }
 }
 
-bool Audio::start_wav_recording (char filename[256], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor)
+size_t Audio::predict_memory_requirements(float original_sample_rate, int decimation_factor)
+{
+    if (decimation_factor <= 0) decimation_factor = 1;
+    float expected_original_duration_seconds = static_cast<float>(std::difftime(_rec_date_end, _rec_date_start));
+    size_t exact_size = static_cast<size_t>((expected_original_duration_seconds * original_sample_rate) / decimation_factor);
+    // +5% of tolerance
+    size_t updated_size = exact_size + (exact_size / 20);
+    return updated_size;
+}
+
+bool Audio::start_wav_recording (char filename[128], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor)
 {
     fprintf (stderr, "start_wav_recording ...\n");
-    _wav_file.open (filename, std::ios::binary);
-    if (!_wav_file.is_open ()) return false;
 
+    _wav_buffer.clear();
+    _wav_buffer.reserve(predict_memory_requirements(original_sample_rate, decimation_factor));
     _wav_sample_count = 0;
+    if (decimation_factor <= 0) decimation_factor = 1;
     _demod_decimation = decimation_factor;
 
     _demod_phase = 0.0;
     init_lpf_filter (original_sample_rate, host_freq, cutoff_freq);
 
-    char dummy_header[44] = {0};
-    _wav_file.write (dummy_header, 44);
-
     return true;
 }
 
-void Audio::write_sample_to_wav (float sample)
-{
-    if (!_wav_file.is_open ())
-    {
-        _is_recording = false;
-        return;
+
+inline void Audio::write_sample_to_wav(float sample) {
+    if (_is_recording) {
+        _wav_buffer.push_back(sample);
+        _wav_sample_count++;
     }
-
-    if (sample > 1.0f) sample = 1.0f;
-    if (sample < -1.0f) sample = -1.0f;
-
-    int16_t int_sample = (int16_t) (sample * 32767.0f);
-
-    _wav_file.write (reinterpret_cast<char*> (&int_sample), sizeof (int16_t));
-    _wav_sample_count++;
 }
 
-void Audio::stop_wav_recording (float original_sample_rate)
+void Audio::write_wav_header(float original_sample_rate)
 {
-    fprintf (stderr, "stop_wav_recording ...\n");
-    _is_recording = false;
-    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
-
-    if (!_wav_file.is_open ()) return;
-
     int subchunk2_size = _wav_sample_count * 2;
     int chunk_size = 36 + subchunk2_size;
     int sample_rate = (int) (original_sample_rate);
@@ -219,9 +216,39 @@ void Audio::stop_wav_recording (float original_sample_rate)
     _wav_file.write (reinterpret_cast<char*> (&bits_per_sample), 2);
 
     _wav_file.write ("data", 4);
-    _wav_file.write (reinterpret_cast<char*> (&subchunk2_size), 4);
+    _wav_file.write (reinterpret_cast<char*> (&subchunk2_size), 4);   
+}
 
-    _wav_file.close ();
+void Audio::stop_wav_recording (char filename[128], float original_sample_rate)
+{
+    fprintf (stderr, "stop_wav_recording ...\n");
+    _is_recording = false;
+    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
+
+    _wav_file.open(filename, std::ios::binary);
+
+    if (!_wav_file.is_open ()) return;
+
+    write_wav_header(original_sample_rate);
+
+    for (size_t i = 0; i < _wav_buffer.size(); ++i) {
+        float sample = _wav_buffer[i];
+        
+        // Hard Clipping
+        if (sample > 1.0f) sample = 1.0f;
+        if (sample < -1.0f) sample = -1.0f;
+        
+        // Convert to 16 bits format
+        int16_t int_sample = static_cast<int16_t>(sample * 32767.0f);
+        
+        // write 2 bytes to the file
+        _wav_file.write(reinterpret_cast<const char*>(&int_sample), sizeof(int16_t));
+    }
+
+    _wav_file.close();
+
+    _wav_buffer.clear();
+    _wav_buffer.shrink_to_fit();
 }
 
 
@@ -473,7 +500,8 @@ void Audio::process (void)
 	    M_buffp *Z = (M_buffp *) M; 
 	    _data = Z->_data;
 	    _size = Z->_size;
-	    _step = Z->_step; 
+	    _step = Z->_step;
+        _rec_decimation_factor = Z->_decimation_factor;
 	    _dind = 0;
 	    _scnt = 0;
 
@@ -492,15 +520,14 @@ void Audio::process (void)
         // New memory assigned
         _demulated_data = new float[_size];
         //_demulated_data = (float*) fftwf_malloc(sizeof(float) * _size)
-
-        // The decimated buffer size is the original size divided by decimation factor
-        int decimated_size = _size / _demod_decimation;
-        _demulated_decimated_data = new float[decimated_size];
+        //int decimated_size = _size / _demod_decimation;
+        _demulated_decimated_data = new float[_size];
         //_demulated_decimated_data = (float*) fftwf_malloc(sizeof(decimated_size) * _size)
 
         // Initialize buffers (Zeroed)
         std::fill(_demulated_data, _demulated_data + _size, 0.0f);
-        std::fill(_demulated_decimated_data, _demulated_decimated_data + decimated_size, 0.0f);
+        std::fill(_demulated_decimated_data, _demulated_decimated_data + _size, 0.0f);
+        //std::fill(_demulated_decimated_data, _demulated_decimated_data + decimated_size, 0.0f);
 
         // Restarting decimation indices
         _decim_counter = 0;
@@ -553,7 +580,7 @@ void Audio::process (void)
         }
         if (_rec_action == 0)
         {
-            stop_wav_recording (_rec_fsamp);
+            stop_wav_recording (_rec_filename, _rec_fsamp);
         }
 
     }

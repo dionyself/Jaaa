@@ -43,15 +43,17 @@ class M_buffp : public ITC_mesg
 {
 public:
 
-    M_buffp (float *data, int size, int step) : 
+    M_buffp (float *data, int size, int step, int decimation_factor) : 
 	ITC_mesg (M_BUFFP),
         _data (data),
         _size (size),
-        _step (step) {}
+        _step (step),
+        _decimation_factor(decimation_factor) {}
 
     float    *_data;
     int       _size;
     int       _step;
+    int _decimation_factor;
 };
 
 class M_finfo : public ITC_mesg

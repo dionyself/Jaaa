@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fstream>
+#include <vector>
 #include <zita-alsa-pcmi.h>
 #include <clthreads.h>
 #include <jack/jack.h>
@@ -75,8 +76,9 @@ public:
     void  init_jack (const char *server);
 
     // WAV Recording control
-    bool  start_wav_recording (char _rec_filename[256], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor);
-    void  stop_wav_recording (float original_sample_rate);
+    size_t predict_memory_requirements(float original_sample_rate, int decimation_factor);
+    bool  start_wav_recording (char _rec_filename[128], float original_sample_rate, float host_freq, float cutoff_freq, int decimation_factor);
+    void  stop_wav_recording (char filename[128], float original_sample_rate);
 
 private:
 
@@ -93,6 +95,7 @@ private:
     void  init_lpf_filter (unsigned int sample_rate, float host_freq, float cutoff_freq);
     void  demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples);
     void  write_sample_to_wav (float sample);
+    void  write_wav_header(float original_sample_rate);
 
     const char     *_jname;
     ITC_ctrl       *_cmain;
@@ -142,6 +145,7 @@ private:
 
     // WAV recording vars
     std::ofstream   _wav_file;
+    std::vector<float> _wav_buffer;
     int             _wav_sample_count;
 
     // Demulator/filter vars
