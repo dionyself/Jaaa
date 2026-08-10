@@ -140,15 +140,17 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     y += Bst1.size.y + 25;
 
     // Heterodyning
-    _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Mix Freq", 0, HOSTF);
-    y += Bst1.size.y;
     _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Norm/LSB", 0, DMOD);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 20;
 
     // Demulating
+    _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
+    y += Bst1.size.y;
     _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decim F", 0, REC_DEC);
     y += Bst1.size.y;
     _butt [CUTOFF] = new X_tbutton (this, this, &Bst1, x, y, "Cutoff F", 0, CUTOFF);
+    y += Bst1.size.y;
+    _butt [DEM_UDT] = new X_tbutton (this, this, &Bst1, x, y, "Updt Dem", 0, DEM_UDT);
     y += Bst1.size.y + 25;
 
     // Recording
@@ -173,7 +175,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     Bst0.size.x = 17;
     Bst0.size.y = 17;
-    y += 47;
+    y += 40;
     _butt [OP1] = new X_tbutton (this, this, &Bst0, x     , y, "1", 0, OP1);
     _butt [OP2] = new X_tbutton (this, this, &Bst0, x + 19, y, "2", 0, OP2);
     _butt [OP3] = new X_tbutton (this, this, &Bst0, x + 38, y, "3", 0, OP3);
@@ -495,13 +497,22 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
     case REC_STOP:
             toggle_recording();
             break;
+    case DEM_UDT:
+            if (!(_is_recording or _rec_scheduled))
+            {
+                update_demulator();
+            } else
+            {
+                fprintf(stderr, "Error: You cannot upate demulation settings while Recording\n");
+            }
+            break;
     case DMOD:
         _demod_mode = (_demod_mode + 1) % 2;
             
         // Colors indicator
         _butt[DMOD]->set_stat(_demod_mode); 
             
-        if (_demod_mode != 0) // if we are un LSB mode (1)
+        if (_demod_mode != 0) // if we are in LSB mode (1)
         {
             _f0 = 0.0f;
             set_f1(_host_freq);
@@ -584,12 +595,12 @@ void Mainwin::redraw (void)
     D.move (_xs - RMAR + 2, 338);
     D.drawstring ("Amplitude", -1);
     D.move (_xs - RMAR + 2, 395);
-    D.drawstring ("Heterodyning", -1);
-    D.move (_xs - RMAR + 2, 455);
+    D.drawstring ("Raw Viewer", -1);
+    D.move (_xs - RMAR + 2, 435);
     D.drawstring ("Demulating", -1);
-    D.move (_xs - RMAR + 2, 515);
+    D.move (_xs - RMAR + 2, 525);
     D.drawstring ("Recorder", -1);
-    D.move (_xs - RMAR + 2, 590);
+    D.move (_xs - RMAR + 2, 600);
     D.drawstring ("Curr value", -1);
     D.move (_xs - RMAR + 2, 660);
     D.drawstring ("Output", -1);
@@ -1685,7 +1696,7 @@ void Mainwin::toggle_recording(void)
         _rec_date_end = 0;
         _rec_date_start = 0;
         _butt[REC_STOP]->set_stat(0);
-        fprintf(stderr, "Stoped Recording\n");
+        fprintf(stderr, "Stoped Recording (event emited)\n");
         return;
     }
     else
@@ -1744,4 +1755,34 @@ void Mainwin::toggle_recording(void)
         _butt[REC_STOP]->set_stat(2); // Button color GUI Update
         fprintf(stderr, "Start Record command emited\n");
     }
+}
+
+void Mainwin::update_demulator(void)
+{
+    int update_action = 2; 
+
+    // prepare Msg
+    M_finfo *update_info = new M_finfo (
+        _rec_fname_prefix, 
+        _rec_date_start, 
+        _rec_date_end, 
+        _rec_duration, 
+        _rec_capture_type, 
+        _rec_file_type, 
+        update_action, 
+        _fsamp, 
+        _host_freq,
+        _cutoff_freq,
+        _rec_decimation_factor
+    );
+    
+    // We are not processing a file
+    //strncpy(update_info->_rec_filename, _rec_filename, 126);
+    //update_info->_rec_filename[127] = '\0';
+
+    // Sending the event
+    _audio->put_event (EV_MESG, update_info);
+    
+    // Log to console (Optional)
+    fprintf(stderr, "Demulator Update command emitted\n");
 }

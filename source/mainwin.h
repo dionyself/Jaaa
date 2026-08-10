@@ -129,7 +129,8 @@ private:
         CUTOFF,
         SCHED,   // *
         TIMER,   // *
-        REC_STOP,// *
+        REC_STOP, // *
+        DEM_UDT,
         NBUTT
     };
 
@@ -190,6 +191,7 @@ private:
     void calc_peak (float *f, float *p, float r);
     void print_note (char *s, float f);
     void toggle_recording(void);
+    void update_demulator(void);
 
     int         _xs, _ys;
     int         _running;
