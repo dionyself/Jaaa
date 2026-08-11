@@ -558,6 +558,32 @@ void Audio::process (void)
         _rec_action = Z->_rec_action;
         _is_recording = false;
 
+        if (_rec_action == 0 || _rec_action == 1)
+        {
+            // Update Rec/Dec/Dem/Fil State vars
+            strncpy(_rec_filename, Z->_rec_filename, 126);
+            _rec_filename[127] = '\0';
+            _rec_duration = Z->_rec_duration;
+            _rec_date_start = Z->_rec_date_start;
+            _rec_date_end = Z->_rec_date_end;
+            _rec_capture_type = Z->_rec_capture_type;
+            _rec_file_type = Z->_rec_file_type;
+            _rec_action = Z->_rec_action;
+            _rec_decimation_factor = Z->_rec_decimation_factor;
+            _rec_fsamp = Z->_rec_fsamp;
+            _rec_host_freq = Z->_rec_host_freq;
+            _rec_cutoff_freq = Z->_rec_cutoff_freq;
+
+            if (_rec_action == 0)
+            {
+                stop_wav_recording (_rec_filename, _rec_fsamp); 
+            }
+            if (_rec_action == 1)
+            {
+                _is_recording = start_wav_recording (_rec_filename, _rec_fsamp, _rec_host_freq, _rec_cutoff_freq, _rec_decimation_factor);
+            }
+        }
+
         if (_rec_action == 2)
         {
             // Update Dec/Dem/Fil State vars
@@ -565,43 +591,6 @@ void Audio::process (void)
             _rec_host_freq = Z->_rec_host_freq;
             _rec_cutoff_freq = Z->_rec_cutoff_freq;
             init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
-        } else if (_rec_action == 1)
-        {
-            // Update Rec/Dec/Dem/Fil State vars
-            strncpy(_rec_filename, Z->_rec_filename, 126);
-            _rec_filename[127] = '\0';
-            _rec_duration = Z->_rec_duration;
-            _rec_date_start = Z->_rec_date_start;
-            _rec_date_end = Z->_rec_date_end;
-            _rec_capture_type = Z->_rec_capture_type;
-            _rec_file_type = Z->_rec_file_type;
-            _rec_action = Z->_rec_action;
-            _rec_decimation_factor = Z->_rec_decimation_factor;
-            _rec_fsamp = Z->_rec_fsamp;
-            _rec_host_freq = Z->_rec_host_freq;
-            _rec_cutoff_freq = Z->_rec_cutoff_freq;
-            fprintf(stderr, "We are proccesing filename: %s fsamp: %u host_freq: %.2f cutoff: %.2f decimation: %d\n",
-                Z->_rec_filename, 
-                Z->_rec_fsamp, 
-                Z->_rec_host_freq, 
-                Z->_rec_cutoff_freq, 
-                Z->_rec_decimation_factor);
-            _is_recording = start_wav_recording (_rec_filename, _rec_fsamp, _rec_host_freq, _rec_cutoff_freq, _rec_decimation_factor);
-        } else if (_rec_action == 0){
-            // Update Rec/Dec/Dem/Fil State vars
-            strncpy(_rec_filename, Z->_rec_filename, 126);
-            _rec_filename[127] = '\0';
-            _rec_duration = Z->_rec_duration;
-            _rec_date_start = Z->_rec_date_start;
-            _rec_date_end = Z->_rec_date_end;
-            _rec_capture_type = Z->_rec_capture_type;
-            _rec_file_type = Z->_rec_file_type;
-            _rec_action = Z->_rec_action;
-            _rec_decimation_factor = Z->_rec_decimation_factor;
-            _rec_fsamp = Z->_rec_fsamp;
-            _rec_host_freq = Z->_rec_host_freq;
-            _rec_cutoff_freq = Z->_rec_cutoff_freq;
-            stop_wav_recording (_rec_filename, _rec_fsamp);
         }
     }
 	M->recover ();

@@ -237,9 +237,10 @@ private:
 
     float _host_freq;
     float _cutoff_freq;
-    int   _demod_mode;
+    bool _is_lsb_view;
+    int _decimation_factor;
 
-    
+    // Rec vars
     bool _is_recording;
     bool _rec_scheduled;
     float _rec_duration;
@@ -248,7 +249,6 @@ private:
     int _rec_capture_type;
     int _rec_file_type;
     int _rec_action;
-    int _rec_decimation_factor;
     const char *_rec_fname_prefix;
     char _rec_filename[128];
 };

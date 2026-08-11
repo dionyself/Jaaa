@@ -45,24 +45,24 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     X_window (parent, XPOS, YPOS, XDEF, YDEF, Colors.main_bg), _xs (XDEF), _ys (YDEF), _running (1),
     _audio (audio), _input (-1), _drag (0), _p_ind (-1), _ngx (0), _ngy (0), _fftplan (0), _fftlen (64),
     _host_freq (500.0f),
-    _demod_mode (2)
+    _is_lsb_view (false)
 
 {
     int      x, y;
     X_hints  H;
+
+    // Rec vars    
     _is_recording = false;
     _rec_scheduled = false;
-
     _rec_fname_prefix = "geological_record";
-    //_rec_filename =
     _rec_date_start = 0;
     _rec_duration = 1.0f;
-    _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+    _rec_date_end = 0;
     _rec_capture_type = 0;
     _rec_file_type = 0;
     _rec_action = 0;
-    _rec_decimation_factor = 100;
 
+    _decimation_factor = 100;
     _cutoff_freq = 35.0f;
 
     _my_clock = new QuickTimer(100);
@@ -146,9 +146,9 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     // Demulating
     _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
     y += Bst1.size.y;
-    _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decim F", 0, REC_DEC);
-    y += Bst1.size.y;
     _butt [CUTOFF] = new X_tbutton (this, this, &Bst1, x, y, "Cutoff F", 0, CUTOFF);
+    y += Bst1.size.y;
+    _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decimate", 0, REC_DEC);
     y += Bst1.size.y;
     _butt [DEM_UDT] = new X_tbutton (this, this, &Bst1, x, y, "Updt Dem", 0, DEM_UDT);
     y += Bst1.size.y + 25;
@@ -322,7 +322,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validation
                     {
                         _host_freq = _p_val;
-                        if (_demod_mode != 0)
+                        if (_is_lsb_view)
                         {
                             _f0 = 0.0f;
                             set_f1(_host_freq);
@@ -335,7 +335,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 case REC_DEC:
                     if (_p_val >= 1.0f && !(_is_recording or _rec_scheduled)) // Validación (asumiendo que el factor de decimación mínimo es 1)
                     {
-                        _rec_decimation_factor = (int)_p_val; 
+                        _decimation_factor = (int)_p_val; 
                         set_param(REC_DEC);
                         redraw();
                     }
@@ -507,24 +507,22 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             }
             break;
     case DMOD:
-        _demod_mode = (_demod_mode + 1) % 2;
-            
-        // Colors indicator
-        _butt[DMOD]->set_stat(_demod_mode); 
-            
-        if (_demod_mode != 0) // if we are in LSB mode (1)
+        _is_lsb_view = !_is_lsb_view;
+        if (_is_lsb_view) // if we are in LSB mode
         {
             _f0 = 0.0f;
             set_f1(_host_freq);
             set_bw(5.859f);
             set_param (BANDW);
+            _butt[DMOD]->set_stat(2);
         }
-        else // If We are in Normal Mode (0)
+        else // If We are in Normal Mode
         {
             _f0 = 0.0f;
             set_f1(_fmax);
             set_bw(46.875f);
             set_param (BANDW);
+            _butt[DMOD]->set_stat(0);
         }
         break;
 	}
@@ -791,7 +789,7 @@ void Mainwin::set_param (int i)
         _p_val = _host_freq;
         break;
     case REC_DEC:
-        _p_val = (float)_rec_decimation_factor;
+        _p_val = (float)_decimation_factor;
         break;
     case CUTOFF:
         _p_val = _cutoff_freq;
@@ -1391,7 +1389,7 @@ void Mainwin::handle_mesg (ITC_mesg *M)
         sprintf (s, "%s-%s  [%s]", PROGNAME, VERSION, Z->_jname);
         x_set_title (s);
         _ipcnt = 0;
-        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _host_freq, _cutoff_freq, _rec_decimation_factor));     
+        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _host_freq, _cutoff_freq, _decimation_factor));     
     }
     M->recover ();
 }
@@ -1535,7 +1533,7 @@ void Mainwin::calc_spect (Spectdata *S)
     if (dd > dc) S->_bits |=  Spectdata::YM_VAL;
     else         S->_bits &= ~Spectdata::YM_VAL;
 
-    if (_demod_mode == 1) { // LSB Mode 
+    if (_is_lsb_view) { // LSB Mode 
 
         // Calculate inicial frequency, based on the last pixel (LSB only)
         float f_real_base = _host_freq - (S->_f0 + (S->_npix - 0.5f) * dd);
@@ -1676,14 +1674,14 @@ void Mainwin::calc_peak (float *f, float *p, float r)
 void Mainwin::toggle_recording(void)
 {
 
-    M_finfo *rec_f_info = new M_finfo (_rec_fname_prefix, _rec_date_start, _rec_date_end, _rec_duration, _rec_capture_type, _rec_file_type, _rec_action, _fsamp, _host_freq, _cutoff_freq, _rec_decimation_factor);
+    M_finfo *rec_f_info = new M_finfo (_rec_fname_prefix, _rec_date_start, _rec_date_end, _rec_duration, _rec_capture_type, _rec_file_type, _rec_action, _fsamp, _host_freq, _cutoff_freq, _decimation_factor);
     rec_f_info->_rec_date_start = _rec_date_start;
     rec_f_info->_rec_duration = _rec_duration;
     rec_f_info->_rec_capture_type = 0;
     rec_f_info->_rec_file_type = 0;
     rec_f_info->_rec_action = 0;
     rec_f_info->_rec_fsamp = _fsamp;
-    rec_f_info->_rec_decimation_factor = _rec_decimation_factor;
+    rec_f_info->_rec_decimation_factor = _decimation_factor;
     rec_f_info->_rec_host_freq = _host_freq;
 
     if (_is_recording)
@@ -1705,12 +1703,14 @@ void Mainwin::toggle_recording(void)
         time_t now = _my_clock->get_fast_date();
         _is_recording = true;
         _rec_scheduled = false;
+
         if (_rec_date_start == 0)
         {
             
             if (_rec_duration > 0.59f)
             {
                 _rec_date_end = now + (time_t)(_rec_duration * 60);
+                fprintf(stderr, "Normal Recording ...\n");
             }
             else if (0 < _rec_duration && _rec_duration  <= 0.59f)
             {
@@ -1730,6 +1730,7 @@ void Mainwin::toggle_recording(void)
             _is_recording = false;
             _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
             _rec_scheduled = true;
+            _butt[REC_STOP]->set_stat(1);
             fprintf(stderr, "Record scheduled\n");
             return;
         }
@@ -1743,7 +1744,7 @@ void Mainwin::toggle_recording(void)
         
         // Formato: YYYYMMDD_HHMMSS
         strftime(date_str, sizeof(date_str), "%Y%m%d_%H%M%S", tm_info); 
-        sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _rec_decimation_factor);
+        sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _decimation_factor);
         strncpy(_rec_filename, filename, 126);
         _rec_filename[127] = '\0';
         strncpy(rec_f_info->_rec_filename, filename, 126);
@@ -1753,6 +1754,7 @@ void Mainwin::toggle_recording(void)
 
         _audio->put_event (EV_MESG, rec_f_info);
         _butt[REC_STOP]->set_stat(2); // Button color GUI Update
+
         fprintf(stderr, "Start Record command emited\n");
     }
 }
@@ -1773,7 +1775,7 @@ void Mainwin::update_demulator(void)
         _fsamp, 
         _host_freq,
         _cutoff_freq,
-        _rec_decimation_factor
+        _decimation_factor
     );
     
     // We are not processing a file
