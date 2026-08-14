@@ -69,15 +69,19 @@ public:
 
     enum { MK1_SET = 1, MK1_NSE = 2, MK2_SET = 4, MK2_NSE = 8, RESET = 16, PEAKH = 32, FREEZE = 64, YP_VAL = 256, YM_VAL = 512 };
 
-    Spectdata (int size)
+    Spectdata (int size)//, int size2)
     {
         _yp = new float [size];
         _ym = new float [size];
+        _yp2 = new float [size];
+        _ym2 = new float [size];
     }
     ~Spectdata (void)
     {
         delete[] _yp;
         delete[] _ym;
+        delete[] _yp2;
+        delete[] _ym2;
     }
 
     int    _npix;
@@ -94,6 +98,8 @@ public:
     char  *_xf;
     float *_yp;        
     float *_ym;
+    float *_yp2;        
+    float *_ym2;
 };
 
 
@@ -225,8 +231,13 @@ private:
     fftwf_complex  *_trbuf;
     fftwf_plan      _fftplan; 
     float          *_ipbuf;
+    float          *_ipbuf_demod;
     float          *_fftbuf;
     float          *_power;
+    fftwf_complex  *_trbuf_demod;
+    fftwf_plan      _fftplan_demod; 
+    float          *_fftbuf_demod;
+    float          *_power_demod;
     int             _fftlen;
     int             _ipmod;
     int             _ipcnt;

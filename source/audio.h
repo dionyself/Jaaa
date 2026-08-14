@@ -136,12 +136,10 @@ private:
 
     // Output buffers
     float         *_demulated_data;
-    float         *_demulated_decimated_data;
     
     // Decimation vars
     int _demod_decimation;
     int _decim_counter;
-    int _decim_ind;
 
     // WAV recording vars
     std::ofstream   _wav_file;

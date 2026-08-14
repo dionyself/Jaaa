@@ -44,7 +44,7 @@ const char *Mainwin::_notes[12] = { "C", "C#,Db", "D", "D#,Eb", "E", "F",
 Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     X_window (parent, XPOS, YPOS, XDEF, YDEF, Colors.main_bg), _xs (XDEF), _ys (YDEF), _running (1),
     _audio (audio), _input (-1), _drag (0), _p_ind (-1), _ngx (0), _ngy (0), _fftplan (0), _fftlen (64),
-    _host_freq (500.0f),
+    _host_freq (16384.0f), // (32.768 Khz / 2)
     _is_lsb_view (false)
 
 {
@@ -56,14 +56,14 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _rec_scheduled = false;
     _rec_fname_prefix = "geological_record";
     _rec_date_start = 0;
-    _rec_duration = 1.0f;
+    _rec_duration = 10.0f;
     _rec_date_end = 0;
     _rec_capture_type = 0;
     _rec_file_type = 0;
     _rec_action = 0;
 
-    _decimation_factor = 100;
-    _cutoff_freq = 35.0f;
+    _decimation_factor = 1000;
+    _cutoff_freq = 10.0f;
 
     _my_clock = new QuickTimer(100);
 
@@ -219,6 +219,12 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _trbuf = (fftwf_complex *) fftwf_malloc ((FFT_MAX / 2 + 9) * sizeof (fftwf_complex));
     _power = new float [FFT_MAX + 1]; //!!!
 
+    _ipbuf_demod = (float *) fftwf_malloc (BUF_LEN * sizeof (float));
+    _fftbuf_demod = (float *) fftwf_malloc (FFT_MAX * sizeof (float));
+    _trbuf_demod  = (fftwf_complex *) fftwf_malloc ((FFT_MAX / 2 + 9) * sizeof (fftwf_complex));
+    _power_demod  = new float [FFT_MAX + 1];
+    _fftplan_demod = 0;
+
     // Configuring analizer Initial vars
     _spect = new Spectdata (disp()->xsize() - LMAR - RMAR);    
     _spect->_npix = XDEF - LMAR - RMAR;
@@ -248,6 +254,12 @@ Mainwin::~Mainwin (void)
     fftwf_free (_ipbuf);
     XFreePixmap (dpy (), _plotmap);
     XFreeGC (dpy (), _plotgct);
+
+    if (_fftplan_demod) fftwf_destroy_plan (_fftplan_demod);
+    delete[] _power_demod;
+    fftwf_free (_trbuf_demod);
+    fftwf_free (_fftbuf_demod);
+    fftwf_free (_ipbuf_demod);
 }
 
 // X11 graphics event handler (mouse, keyboars, repaint)
@@ -1206,6 +1218,7 @@ void Mainwin::plot_spect (Spectdata *Z)
 {
     int i, n, x, y;
     XPoint P [XMAX - LMAR - RMAR];
+    XPoint P2 [XMAX - LMAR - RMAR];
     float  sx, ry, sy, v; 
 
     X_draw D (dpy (), _plotmap, _plotgct, 0);
@@ -1243,6 +1256,39 @@ void Mainwin::plot_spect (Spectdata *Z)
 	}
         D.drawlines (n, P);
     }
+
+
+    // Demulated logic
+    if (Z->_bits & Spectdata::YM_VAL)
+    {
+        D.setcolor (Colors.spect_mk);
+        for (i = n = 0; i < Z->_npix; i++)
+        {
+        if (Z->_ym2 [i] >= 0)
+        {
+        v = 10 * log10f (Z->_ym2 [i] + 1e-30f);
+            P2 [n].x = i;
+            P2 [n++].y = (int)(ry - (v - _a0) * sy + 0.5f);  
+        }
+    }
+        D.drawlines (n, P2);
+    }
+
+    if (Z->_bits & Spectdata::YP_VAL)
+    {
+        D.setcolor (Colors.spect_trM);
+        for (i = n = 0; i < Z->_npix; i++)
+        {
+        if (Z->_yp2 [i] >= 0)
+        {
+        v = 10 * log10f (Z->_yp2 [i] + 1e-30f);
+            P2 [n].x = i;
+            P2 [n++].y = (int)(ry - (v - _a0) * sy + 0.5f);  
+        }
+    }
+        D.drawlines (n, P2);
+    }
+
 
     sx =  (_xs - LMAR - RMAR - 1) / (Z->_f1 - Z->_f0);
     D.setcolor (Colors.spect_mk);
@@ -1369,9 +1415,11 @@ void Mainwin::alloc_fft (Spectdata *S)
     if (_fftlen != k)
     {
 	if (_fftplan) fftwf_destroy_plan (_fftplan);
+    if (_fftplan_demod) fftwf_destroy_plan (_fftplan_demod);
         S->_bits |= Spectdata::RESET;
         // DFT real-to-complex in 1 optimized dimension
         _fftplan = fftwf_plan_dft_r2c_1d (_fftlen = k, _fftbuf, _trbuf + 4, FFTW_ESTIMATE);
+        _fftplan_demod = fftwf_plan_dft_r2c_1d (_fftlen, _fftbuf_demod, _trbuf_demod + 4, FFTW_ESTIMATE);
         _ipmod = k / (2 * INP_LEN);
         if (_ipmod < 1) _ipmod = 1;
     }
@@ -1389,7 +1437,7 @@ void Mainwin::handle_mesg (ITC_mesg *M)
         sprintf (s, "%s-%s  [%s]", PROGNAME, VERSION, Z->_jname);
         x_set_title (s);
         _ipcnt = 0;
-        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, INP_MAX, INP_LEN, _host_freq, _cutoff_freq, _decimation_factor));     
+        _audio->put_event (EV_MESG, new M_buffp (_ipbuf, _ipbuf_demod, INP_MAX, INP_LEN, _host_freq, _cutoff_freq, _decimation_factor));     
     }
     M->recover ();
 }
@@ -1414,11 +1462,14 @@ void Mainwin::handle_trig ()
         if (k < _fftlen) 
 	    {
 	        memcpy (_ipbuf + INP_MAX, _ipbuf, k * sizeof (float));
+            memcpy (_ipbuf_demod + INP_MAX, _ipbuf_demod, k * sizeof (float));
             k += INP_MAX;
 	    }
 	    memcpy (_fftbuf, _ipbuf + k - _fftlen, _fftlen * sizeof (float));
+        memcpy (_fftbuf_demod, _ipbuf_demod + k - _fftlen, _fftlen * sizeof (float));
         // Execute FFT
         fftwf_execute_dft_r2c (_fftplan, _fftbuf, _trbuf + 4);
+        fftwf_execute_dft_r2c (_fftplan_demod, _fftbuf_demod, _trbuf_demod + 4);
         k = _fftlen / 2;
 
         for (i = 1; i <= 4; i++)
@@ -1427,6 +1478,11 @@ void Mainwin::handle_trig ()
 	       _trbuf [4 - i][1] = -_trbuf [4 + i][1];
 	       _trbuf [4 + k + i][0] =  _trbuf [4 + k - i][0];
 	       _trbuf [4 + k + i][1] = -_trbuf [4 + k - i][1];
+
+           _trbuf_demod [4 - i][0] =  _trbuf_demod [4 + i][0];
+           _trbuf_demod [4 - i][1] = -_trbuf_demod [4 + i][1];
+           _trbuf_demod [4 + k + i][0] =  _trbuf_demod [4 + k - i][0];
+           _trbuf_demod [4 + k + i][1] = -_trbuf_demod [4 + k - i][1];
 	    }
 
 	// Calculate window and pows
@@ -1434,6 +1490,7 @@ void Mainwin::handle_trig ()
 	{
 	    _spect->_bits ^= Spectdata::RESET;
 	    memset (_power, 0, (FFT_MAX + 1) * sizeof (float));
+        memset (_power_demod, 0, (FFT_MAX + 1) * sizeof (float));
 	    if (_spect->_avcnt) _spect->_avcnt = 1;
 	}
         k = _spect->_avcnt; 
@@ -1447,6 +1504,7 @@ void Mainwin::handle_trig ()
         b = 4.0f / ((float)_fftlen * (float)_fftlen);
         s = 0;
         pow = _power;
+        float *pow_d = _power_demod;
         for (i = 0; i < _fftlen / 2; i++)
 	{
 	    p = b * conv0 (_trbuf + 4 + i);
@@ -1461,6 +1519,19 @@ void Mainwin::handle_trig ()
 	    else if (h) { if (p > *pow) *pow = p; }
             else   *pow = p;
             pow++;
+
+        p = b * conv0 (_trbuf_demod + 4 + i);
+            s += p;
+            if (k) *pow_d += a * (p - *pow_d);
+        else if (h) { if (p > *pow_d) *pow_d = p; }
+            else   *pow_d = p;
+            pow_d++;
+        p = b * conv1 (_trbuf_demod + 4 + i);
+            s += p;
+            if (k) *pow_d += a * (p - *pow_d);
+        else if (h) { if (p > *pow_d) *pow_d = p; }
+            else   *pow_d = p;
+            pow_d++;
 	}
         p = b * conv0 (_trbuf + 4 + i);
         s += p;
@@ -1468,6 +1539,12 @@ void Mainwin::handle_trig ()
         else if (h) { if (p > *pow) *pow = p; }
         else   *pow = p;
         _ptot += 0.1f * (0.25f * s - _ptot) + 1e-20f;
+
+        float p2 = b * conv0 (_trbuf_demod + 4 + i);
+        if (k) *pow_d += a * (p2 - *pow_d);
+        else if (h) { if (p2 > *pow_d) *pow_d = p2; }
+        else   *pow_d = p2;
+
 	update (); // Redraw now
 
     if (_is_recording && (_rec_date_end > 0) && (_my_clock->get_fast_date() >= _rec_date_end))
@@ -1523,7 +1600,7 @@ float Mainwin::conv1 (fftwf_complex *v)
 void Mainwin::calc_spect (Spectdata *S)
 {
     int   i, j, k;
-    float dc, dd, fc, p, pp, pm;
+    float dc, dd, fc, p, pp, pm, p2, pp2, pm2;
     float f_real_end;
     
     dc = _fsamp / (2 * _fftlen);
@@ -1547,13 +1624,17 @@ void Mainwin::calc_spect (Spectdata *S)
         {
             f_real_end = _host_freq - (S->_f0 + (i - 0.5f) * dd);
             pp = pm = 0;
+            pp2 = pm2 = 0;
             
             for (k = 0; fc < f_real_end; j++, fc += dc)
             {
                 if (j > _fftlen) break;
                 p = _power [j];
+                p2 = _power_demod [j];
                 if (p > pp) pp = p; 
+                if (p2 > pp2) pp2 = p2;
                 pm += p;
+                pm2 += p2;
                 k++;
             }
             
@@ -1561,11 +1642,15 @@ void Mainwin::calc_spect (Spectdata *S)
             {
                 S->_yp [i] = pp;
                 S->_ym [i] = pm / k;
+                S->_yp2 [i] = pp2;
+                S->_ym2 [i] = pm2 / k;
             }
             else
             {
                 S->_yp [i] = -1;
                 S->_ym [i] = -1;
+                S->_yp2 [i] = -1;
+                S->_ym2 [i] = -1;
             }
         }
     } else { // Normal Mode (0)
@@ -1580,13 +1665,17 @@ void Mainwin::calc_spect (Spectdata *S)
         {
             float fd = f0 + (i + 1) * dd;
             pp = pm = 0;
+            pp2 = pm2 = 0;
             
             for (k = 0; fc < fd; j++, fc += dc)
             {
                 if (j > _fftlen) break;
                 p = _power [j];
-                if (p > pp) pp = p; 
+                p2 = _power_demod [j];
+                if (p > pp) pp = p;
+                if (p2 > pp2) pp2 = p2;  
                 pm += p;
+                pm2 += p2;
                 k++;
             }
             
@@ -1594,11 +1683,15 @@ void Mainwin::calc_spect (Spectdata *S)
             {
                 S->_yp [i] = pp;
                 S->_ym [i] = pm / k;
+                S->_yp2 [i] = pp2;
+                S->_ym2 [i] = pm2 / k;
             }
             else
             {
                 S->_yp [i] = -1;
                 S->_ym [i] = -1;
+                S->_yp2 [i] = -1;
+                S->_ym2 [i] = -1;
             }
         }
     }

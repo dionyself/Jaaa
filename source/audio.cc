@@ -40,11 +40,9 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _input (-1),
     _data (0),
     _outs (0),
-    _demulated_data (nullptr),
-    _demulated_decimated_data (nullptr),
-    _demod_decimation(1),
-    _decim_counter(0),
-    _decim_ind(0)
+    _demulated_data (0),
+    _demod_decimation(1000),
+    _decim_counter(0)
 {
     _is_recording = false;
     _rec_duration = 0;
@@ -53,12 +51,12 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _rec_capture_type = 0;
     _rec_file_type = 0;
     _rec_action = 0;
-    _rec_decimation_factor = 100;
+    _rec_decimation_factor = 1000;
     _rec_fsamp = 0;
-    _rec_host_freq = 500.0;
-    _rec_cutoff_freq = 35.0;
-    _host_freq = 500.0;
-    _cutoff_freq = 35.0;
+    _rec_host_freq = 16384.0; // (32.768 Khz / 2)
+    _rec_cutoff_freq = 10.0;
+    _host_freq = 16384.0; // (32.768 Khz / 2)
+    _cutoff_freq = 10.0;
 }
 
 
@@ -68,17 +66,6 @@ Audio::~Audio (void)
     if (_run_alsa) close_alsa ();
     if (_run_jack) close_jack ();
     delete[] _outs;
-    if (_demulated_data != nullptr) {
-        delete[] _demulated_data;
-        // fftwf_free(_demulated_data); // if fftwf is used
-        _demulated_data = nullptr;
-    }
-
-    if (_demulated_decimated_data != nullptr) {
-        delete[] _demulated_decimated_data;
-        // fftwf_free(_demulated_decimated_data); // if fftwf is used
-        _demulated_decimated_data = nullptr;
-    }
 }
 
 
@@ -112,6 +99,7 @@ void Audio::init_lpf_filter (unsigned int sample_rate, float host_freq, float cu
     _demod_phase_inc = 2.0 * M_PI * host_freq / static_cast<double>(sample_rate);
     _filter_stage1.setLowPass (sample_rate, cutoff_freq);
     _filter_stage2.setLowPass (sample_rate, cutoff_freq);
+    fprintf (stderr, "lpf filter was updated to %u sample rate and  %f host freq  and  %f cutoff freq...\n", sample_rate, host_freq, cutoff_freq);
 }
 
 void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulated, int num_samples)
@@ -133,15 +121,7 @@ void Audio::demodulate_buffer (float* input_buffer, float* output_buffer_demulat
         output_buffer_demulated[i] = (float) final_filtered;
 
         if (_decim_counter % _demod_decimation == 0)
-        {
-            _demulated_decimated_data[_decim_ind] = (float) final_filtered;
-            _decim_ind++;
-
-            // Decimated buffer becomes a ring buffer
-            if (_decim_ind >= (_size / _demod_decimation)) {
-                _decim_ind = 0; 
-            }
-            
+        {   
             if (_is_recording)
             {
                 write_sample_to_wav ((float) final_filtered);
@@ -498,6 +478,7 @@ void Audio::process (void)
 	{
 	    M_buffp *Z = (M_buffp *) M; 
 	    _data = Z->_data;
+        _demulated_data = Z->_demod_data;
 	    _size = Z->_size;
 	    _step = Z->_step;
         _rec_host_freq = Z->_rec_host_freq;
@@ -506,33 +487,8 @@ void Audio::process (void)
 	    _dind = 0;
 	    _scnt = 0;
 
-        // Free previous memory (prevent memory leaks if _size changes)
-        if (_demulated_data != nullptr) {
-            delete[] _demulated_data;
-            //fftwf_free(_demulated_data);
-            _demulated_data = nullptr;
-        }
-        if (_demulated_decimated_data != nullptr) {
-            delete[] _demulated_decimated_data;
-            //fftwf_free(_demulated_decimated_data);
-            _demulated_decimated_data = nullptr;
-        }
-
-        // New memory assigned
-        _demulated_data = new float[_size];
-        //_demulated_data = (float*) fftwf_malloc(sizeof(float) * _size)
-        //int decimated_size = _size / _demod_decimation;
-        _demulated_decimated_data = new float[_size];
-        //_demulated_decimated_data = (float*) fftwf_malloc(sizeof(decimated_size) * _size)
-
-        // Initialize buffers (Zeroed)
-        std::fill(_demulated_data, _demulated_data + _size, 0.0f);
-        std::fill(_demulated_decimated_data, _demulated_decimated_data + _size, 0.0f);
-        //std::fill(_demulated_decimated_data, _demulated_decimated_data + decimated_size, 0.0f);
-
         // Restarting decimation indices
         _decim_counter = 0;
-        _decim_ind = 0;
 
         init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
 	}
