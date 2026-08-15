@@ -92,7 +92,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     // --- GUI controls configuration ---
     x = XDEF - RMAR + 3;
-    y = 20;
+    y = 15;
     // Input buttons
     _butt [IP1] = new X_tbutton (this, this, &Bst0, x     , y, "1", 0, IP1);
     _butt [IP2] = new X_tbutton (this, this, &Bst0, x + 19, y, "2", 0, IP2);
@@ -103,7 +103,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [IP6] = new X_tbutton (this, this, &Bst0, x + 19, y, "6", 0, IP6);
     _butt [IP7] = new X_tbutton (this, this, &Bst0, x + 38, y, "7", 0, IP7);
     _butt [IP8] = new X_tbutton (this, this, &Bst0, x + 57, y, "8", 0, IP8);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 20;
 
     // Markers and analitic buttons
     Bst1.size.x = RMAR - 6;
@@ -114,14 +114,14 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [PEAKH] = new X_tbutton (this, this, &Bst1, x, y, "Pk Hold", 0, PEAKH);
     y += Bst1.size.y;
     _butt [FREEZ] = new X_tbutton (this, this, &Bst1, x, y, "Freeze",  0, FREEZ);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     _butt [MCLR]  = new X_tbutton (this, this, &Bst1, x, y, "Clear", 0, MCLR);
     y += Bst1.size.y;
     _butt [MPEAK] = new X_tbutton (this, this, &Bst1, x, y, "Peak",  0, MPEAK);
     y += Bst1.size.y;
     _butt [MNSE]  = new X_tbutton (this, this, &Bst1, x, y, "Noise", 0, MNSE);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     // Scalling and frequency controls
     _butt [FMIN]  = new X_tbutton (this, this, &Bst1, x, y, "Min",  0, FMIN);
@@ -131,17 +131,17 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [FCENT] = new X_tbutton (this, this, &Bst1, x, y, "Cent", 0, FCENT);
     y += Bst1.size.y;
     _butt [FSPAN] = new X_tbutton (this, this, &Bst1, x, y, "Span", 0, FSPAN);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     // Amplitude controls
     _butt [AMAX]  = new X_tbutton (this, this, &Bst1, x, y, "Max", 0, AMAX);
     y += Bst1.size.y;
     _butt [ASPAN] = new X_tbutton (this, this, &Bst1, x, y, "Range", 0, ASPAN);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     // Heterodyning
-    _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "Norm/LSB", 0, DMOD);
-    y += Bst1.size.y + 20;
+    _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "LSB View", 0, DMOD);
+    y += Bst1.size.y + 120;
 
     // Demulating
     _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
@@ -151,7 +151,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decimate", 0, REC_DEC);
     y += Bst1.size.y;
     _butt [DEM_UDT] = new X_tbutton (this, this, &Bst1, x, y, "Apply", 0, DEM_UDT);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     // Recording
     _butt [SCHED] = new X_tbutton (this, this, &Bst1, x, y, "Start Time", 0, SCHED);
@@ -159,7 +159,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [TIMER] = new X_tbutton (this, this, &Bst1, x, y, "Duration", 0, TIMER);
     y += Bst1.size.y;
     _butt [REC_STOP] = new X_tbutton (this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
-    y += Bst1.size.y + 25;
+    y += Bst1.size.y + 15;
 
     // Text input
     _txt1 = new X_textip (this, this, &Tst1, x, y, RMAR - 6, 18, 16);
@@ -175,7 +175,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     Bst0.size.x = 17;
     Bst0.size.y = 17;
-    y += 40;
+    y += 30;
     _butt [OP1] = new X_tbutton (this, this, &Bst0, x     , y, "1", 0, OP1);
     _butt [OP2] = new X_tbutton (this, this, &Bst0, x + 19, y, "2", 0, OP2);
     _butt [OP3] = new X_tbutton (this, this, &Bst0, x + 38, y, "3", 0, OP3);
@@ -188,21 +188,24 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     Bst0.size.x = 27;
     Bst0.size.y = 17;
-    y += 24;
+    y += 22;
     _butt [NSE_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, NSE_ACT);
-    y += Bst0.size.y + 4;
+    //y += Bst0.size.y + 4;
+    y += Bst0.size.y;
     _butt [NSE_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Level", 0, NSE_LEV);
 
-    y += Bst0.size.y + 8;
+    y += Bst0.size.y + 5;
     _butt [SI1_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, SI1_ACT);
-    y += Bst0.size.y + 4;
+    //y += Bst0.size.y + 4;
+    y += Bst0.size.y;
     _butt [SI1_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Ampl", 0, SI1_LEV);
     y += Bst1.size.y;
     _butt [SI1_FREQ] = new X_tbutton (this, this, &Bst1, x, y, "Freq", 0, SI1_FREQ);
 
-    y += Bst0.size.y + 8;
+    y += Bst0.size.y + 5;
     _butt [SI2_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, SI2_ACT);
-    y += Bst0.size.y + 4;
+    //y += Bst0.size.y + 4;
+    y += Bst0.size.y;
     _butt [SI2_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Ampl", 0, SI2_LEV);
     y += Bst1.size.y;
     _butt [SI2_FREQ] = new X_tbutton (this, this, &Bst1, x, y, "Freq", 0, SI2_FREQ);
@@ -608,31 +611,31 @@ void Mainwin::redraw (void)
     D.clearwin ();     
 
     // Title
-    D.move (_xs - RMAR + 2, 15);
+    D.move (_xs - RMAR + 2, 10);
     D.drawstring ("Input", -1);
-    D.move (_xs - RMAR + 2, 75);
+    D.move (_xs - RMAR + 2, 65);
     D.drawstring ("Analyser", -1);
-    D.move (_xs - RMAR + 2, 168);
+    D.move (_xs - RMAR + 2, 150);
     D.drawstring ("Markers", -1);
-    D.move (_xs - RMAR + 2, 244);
+    D.move (_xs - RMAR + 2, 215);
     D.drawstring ("Frequency", -1);
-    D.move (_xs - RMAR + 2, 338);
+    D.move (_xs - RMAR + 2, 300);
     D.drawstring ("Amplitude", -1);
-    D.move (_xs - RMAR + 2, 395);
-    D.drawstring ("Raw Viewer", -1);
-    D.move (_xs - RMAR + 2, 435);
+    D.move (_xs - RMAR + 2, 348);
+    D.drawstring ("Modes", -1);
+    D.move (_xs - RMAR + 2, 485);
     D.drawstring ("Demulating", -1);
-    D.move (_xs - RMAR + 2, 525);
-    D.drawstring ("Recorder", -1);
-    D.move (_xs - RMAR + 2, 600);
+    D.move (_xs - RMAR + 2, 568);
+    D.drawstring ("WAV Recorder", -1);
+    D.move (_xs - RMAR + 2, 635);
     D.drawstring ("Curr value", -1);
-    D.move (_xs - RMAR + 2, 660);
+    D.move (_xs - RMAR + 2, 685);
     D.drawstring ("Output", -1);
-    D.move (_xs - RMAR + 2, 725);
+    D.move (_xs - RMAR + 2, 745);
     D.drawstring ("Noise", -1);
-    D.move (_xs - RMAR + 2, 770);
+    D.move (_xs - RMAR + 2, 785);
     D.drawstring ("Sine1", -1);
-    D.move (_xs - RMAR + 2, 835);
+    D.move (_xs - RMAR + 2, 840);
     D.drawstring ("Sine2", -1);
 
     plot_fscale ();
