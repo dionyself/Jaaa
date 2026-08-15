@@ -63,7 +63,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _rec_action = 0;
 
     _decimation_factor = 1000;
-    _cutoff_freq = 10.0f;
+    _cutoff_freq = 6000.0f;
 
     _my_clock = new QuickTimer(100);
 
@@ -150,7 +150,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     y += Bst1.size.y;
     _butt [REC_DEC] = new X_tbutton (this, this, &Bst1, x, y, "Decimate", 0, REC_DEC);
     y += Bst1.size.y;
-    _butt [DEM_UDT] = new X_tbutton (this, this, &Bst1, x, y, "Updt Dem", 0, DEM_UDT);
+    _butt [DEM_UDT] = new X_tbutton (this, this, &Bst1, x, y, "Apply", 0, DEM_UDT);
     y += Bst1.size.y + 25;
 
     // Recording
@@ -342,6 +342,9 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         }
 
                         redraw ();    
+                    } else
+                    {
+                        fprintf(stderr, "Error: You cannot update Host frequency settings while Recording\n");
                     }
                     break;
                 case REC_DEC:
@@ -350,15 +353,20 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         _decimation_factor = (int)_p_val; 
                         set_param(REC_DEC);
                         redraw();
+                    } else
+                    {
+                        fprintf(stderr, "Error: You cannot update decimation settings while Recording\n");
                     }
                     break;
-                    
                 case CUTOFF:
                     if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validación básica de frecuencia
                     {
                         _cutoff_freq = _p_val;
                         set_param(CUTOFF);
                         redraw();
+                    } else
+                    {
+                        fprintf(stderr, "Error: You cannot update cutoff frequency settings while Recording\n");
                     }
                     break;
                 case SCHED:
@@ -375,6 +383,9 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         }
                         set_param(SCHED);
                         redraw();
+                    } else
+                    {
+                        fprintf(stderr, "Error: You cannot schedule a new recording while Recording\n");
                     }
                     break;
                 case TIMER:
@@ -383,6 +394,9 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         _rec_duration = _p_val;
                         set_param(TIMER);
                         redraw();
+                    } else
+                    {
+                        fprintf(stderr, "Error: You cannot update duration settings while Recording\n");
                     }
                     break;
 		        }
@@ -515,7 +529,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 update_demulator();
             } else
             {
-                fprintf(stderr, "Error: You cannot upate demulation settings while Recording\n");
+                fprintf(stderr, "Error: You cannot update demulation settings while Recording\n");
             }
             break;
     case DMOD:

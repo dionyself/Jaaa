@@ -152,7 +152,7 @@ private:
     BiquadLPF       _filter_stage1;
     BiquadLPF       _filter_stage2;
     float           _host_freq;
-    float           _cutoff_freq;
+    //float           _cutoff_freq;
 
     // Rec/Dec/Dem/Fil State vars
     bool _is_recording;

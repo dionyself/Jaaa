@@ -54,9 +54,9 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _rec_decimation_factor = 1000;
     _rec_fsamp = 0;
     _rec_host_freq = 16384.0; // (32.768 Khz / 2)
-    _rec_cutoff_freq = 10.0;
+    _rec_cutoff_freq = 6000.0;
     _host_freq = 16384.0; // (32.768 Khz / 2)
-    _cutoff_freq = 10.0;
+    //_cutoff_freq = 6000.0;
 }
 
 
@@ -202,7 +202,7 @@ void Audio::stop_wav_recording (char filename[128], float original_sample_rate)
 {
     fprintf (stderr, "stop_wav_recording ...\n");
     _is_recording = false;
-    init_lpf_filter(_fsamp, _host_freq, _cutoff_freq);
+    init_lpf_filter(_fsamp, _host_freq, _rec_cutoff_freq);
 
     _wav_file.open(filename, std::ios::binary);
 
