@@ -623,6 +623,8 @@ void Mainwin::redraw (void)
     D.drawstring ("Amplitude", -1);
     D.move (_xs - RMAR + 2, 348);
     D.drawstring ("Modes", -1);
+    D.move (_xs - RMAR + 2, 420);
+    D.drawstring ("Export DATA", -1);
     D.move (_xs - RMAR + 2, 485);
     D.drawstring ("Demulating", -1);
     D.move (_xs - RMAR + 2, 568);
