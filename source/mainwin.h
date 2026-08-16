@@ -69,7 +69,7 @@ public:
 
     enum { MK1_SET = 1, MK1_NSE = 2, MK2_SET = 4, MK2_NSE = 8, RESET = 16, PEAKH = 32, FREEZE = 64, YP_VAL = 256, YM_VAL = 512 };
 
-    Spectdata (int size)//, int size2)
+    Spectdata (int size)
     {
         _yp = new float [size];
         _ym = new float [size];
@@ -129,14 +129,20 @@ private:
         OP5, OP6, OP7, OP8,
         NSE_ACT, SI1_ACT, SI2_ACT,
         NSE_LEV, SI1_LEV, SI1_FREQ, SI2_LEV, SI2_FREQ,
-        HOSTF,   // *
-        DMOD,    // *
+        HOSTF,
+        DMOD,
         REC_DEC,
         CUTOFF,
-        SCHED,   // *
-        TIMER,   // *
-        REC_STOP, // *
+        SCHED,
+        TIMER,
+        REC_STOP,
         DEM_UDT,
+        ULF_MOD,
+        ELF_MOD,
+        DT_SCHED,
+        DT_AVG,
+        DT_AMNT,
+        DT_START_STOP,
         NBUTT
     };
 

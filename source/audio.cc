@@ -56,7 +56,6 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _rec_host_freq = 16384.0; // (32.768 Khz / 2)
     _rec_cutoff_freq = 6000.0;
     _host_freq = 16384.0; // (32.768 Khz / 2)
-    //_cutoff_freq = 6000.0;
 }
 
 

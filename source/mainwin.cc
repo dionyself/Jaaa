@@ -103,9 +103,9 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [IP6] = new X_tbutton (this, this, &Bst0, x + 19, y, "6", 0, IP6);
     _butt [IP7] = new X_tbutton (this, this, &Bst0, x + 38, y, "7", 0, IP7);
     _butt [IP8] = new X_tbutton (this, this, &Bst0, x + 57, y, "8", 0, IP8);
-    y += Bst1.size.y + 20;
+    y += Bst1.size.y + 13;
 
-    // Markers and analitic buttons
+    // Analitic buttons
     Bst1.size.x = RMAR - 6;
     _butt [BANDW] = new X_tbutton (this, this, &Bst1, x, y, "Bandw",   0, BANDW);
     y += Bst1.size.y;  
@@ -116,6 +116,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _butt [FREEZ] = new X_tbutton (this, this, &Bst1, x, y, "Freeze",  0, FREEZ);
     y += Bst1.size.y + 15;
 
+    // Markers
     _butt [MCLR]  = new X_tbutton (this, this, &Bst1, x, y, "Clear", 0, MCLR);
     y += Bst1.size.y;
     _butt [MPEAK] = new X_tbutton (this, this, &Bst1, x, y, "Peak",  0, MPEAK);
@@ -141,7 +142,21 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     // Heterodyning
     _butt [DMOD]  = new X_tbutton (this, this, &Bst1, x, y, "LSB View", 0, DMOD);
-    y += Bst1.size.y + 120;
+    y += Bst1.size.y;
+    _butt [ULF_MOD] = new X_tbutton (this, this, &Bst1, x, y, "ULF View", 0, ULF_MOD);
+    y += Bst1.size.y;
+    _butt [ELF_MOD] = new X_tbutton (this, this, &Bst1, x, y, "ELF View", 0, ELF_MOD);
+    y += Bst1.size.y + 15;
+
+    // DATA export
+    _butt [DT_SCHED] = new X_tbutton (this, this, &Bst1, x, y, "Start Time", 0, DT_SCHED);
+    y += Bst1.size.y;
+    _butt [DT_AVG] = new X_tbutton (this, this, &Bst1, x, y, "Avg time", 0, DT_AVG);
+    y += Bst1.size.y;
+    _butt [DT_AMNT] = new X_tbutton (this, this, &Bst1, x, y, "Amount", 0, DT_AMNT);
+    y += Bst1.size.y;
+    _butt [DT_START_STOP] = new X_tbutton (this, this, &Bst1, x, y, "Start/Stop", 0, DT_START_STOP);
+    y += Bst1.size.y + 15;
 
     // Demulating
     _butt [HOSTF] = new X_tbutton (this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
@@ -175,7 +190,7 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     Bst0.size.x = 17;
     Bst0.size.y = 17;
-    y += 30;
+    y += 25;
     _butt [OP1] = new X_tbutton (this, this, &Bst0, x     , y, "1", 0, OP1);
     _butt [OP2] = new X_tbutton (this, this, &Bst0, x + 19, y, "2", 0, OP2);
     _butt [OP3] = new X_tbutton (this, this, &Bst0, x + 38, y, "3", 0, OP3);
@@ -190,13 +205,11 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     Bst0.size.y = 17;
     y += 22;
     _butt [NSE_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, NSE_ACT);
-    //y += Bst0.size.y + 4;
     y += Bst0.size.y;
     _butt [NSE_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Level", 0, NSE_LEV);
 
     y += Bst0.size.y + 5;
     _butt [SI1_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, SI1_ACT);
-    //y += Bst0.size.y + 4;
     y += Bst0.size.y;
     _butt [SI1_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Ampl", 0, SI1_LEV);
     y += Bst1.size.y;
@@ -204,7 +217,6 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
 
     y += Bst0.size.y + 5;
     _butt [SI2_ACT] = new X_tbutton (this, this, &Bst0, XDEF - 30, y, "On", 0, SI2_ACT);
-    //y += Bst0.size.y + 4;
     y += Bst0.size.y;
     _butt [SI2_LEV] = new X_tbutton (this, this, &Bst1, x, y, "Ampl", 0, SI2_LEV);
     y += Bst1.size.y;
@@ -351,7 +363,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case REC_DEC:
-                    if (_p_val >= 1.0f && !(_is_recording or _rec_scheduled)) // Validación (asumiendo que el factor de decimación mínimo es 1)
+                    if (_p_val >= 1.0f && !(_is_recording or _rec_scheduled)) // Decimacition factor cannot be less than 1
                     {
                         _decimation_factor = (int)_p_val; 
                         set_param(REC_DEC);
@@ -375,7 +387,6 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 case SCHED:
                     if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled))
                     {
-                        //_rec_date_start = _p_val;
                         if (_p_val == 0.0f)
                         {
                             _rec_date_start = _p_val;
@@ -537,20 +548,63 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             break;
     case DMOD:
         _is_lsb_view = !_is_lsb_view;
-        if (_is_lsb_view) // if we are in LSB mode
+        if (_is_lsb_view)
         {
             _f0 = 0.0f;
             set_f1(_host_freq);
             set_bw(5.859f);
             set_param (BANDW);
             _butt[DMOD]->set_stat(2);
+            _butt[ELF_MOD]->set_stat(0);
+            _butt[ULF_MOD]->set_stat(0);
         }
-        else // If We are in Normal Mode
+        else
         {
             _f0 = 0.0f;
             set_f1(_fmax);
             set_bw(46.875f);
             set_param (BANDW);
+            _butt[DMOD]->set_stat(0);
+        }
+        break;
+    case ULF_MOD:
+        
+        if (_butt[ULF_MOD]->stat())
+        {
+            _f0 = 0.0f;
+            set_f1(_fmax);
+            set_bw(46.875f);
+            set_param (BANDW);
+            _butt[ULF_MOD]->set_stat(0);  
+        }else
+        {
+            _f0 = 0.0f;
+            set_f1(3.0f);
+            set_bw(0.366f);
+            set_param (BANDW);
+            _butt[ULF_MOD]->set_stat(2);
+            _butt[ELF_MOD]->set_stat(0);
+            _is_lsb_view = false;
+            _butt[DMOD]->set_stat(0);
+        }
+        break;
+    case ELF_MOD:
+        if (_butt[ELF_MOD]->stat())
+        {
+            _f0 = 0.0f;
+            set_f1(_fmax);
+            set_bw(46.875f);
+            set_param (BANDW);
+            _butt[ELF_MOD]->set_stat(0);  
+        }else
+        {
+            _f0 = 0.0f;
+            set_f1(10.0f);
+            set_bw(0.732f);
+            set_param (BANDW);
+            _butt[ELF_MOD]->set_stat(2);
+            _butt[ULF_MOD]->set_stat(0);
+            _is_lsb_view = false;
             _butt[DMOD]->set_stat(0);
         }
         break;
@@ -613,25 +667,25 @@ void Mainwin::redraw (void)
     // Title
     D.move (_xs - RMAR + 2, 10);
     D.drawstring ("Input", -1);
-    D.move (_xs - RMAR + 2, 65);
+    D.move (_xs - RMAR + 2, 60);
     D.drawstring ("Analyser", -1);
-    D.move (_xs - RMAR + 2, 150);
+    D.move (_xs - RMAR + 2, 143);
     D.drawstring ("Markers", -1);
-    D.move (_xs - RMAR + 2, 215);
+    D.move (_xs - RMAR + 2, 210);
     D.drawstring ("Frequency", -1);
-    D.move (_xs - RMAR + 2, 300);
+    D.move (_xs - RMAR + 2, 293);
     D.drawstring ("Amplitude", -1);
-    D.move (_xs - RMAR + 2, 348);
+    D.move (_xs - RMAR + 2, 343);
     D.drawstring ("Modes", -1);
-    D.move (_xs - RMAR + 2, 420);
+    D.move (_xs - RMAR + 2, 408);
     D.drawstring ("Export DATA", -1);
-    D.move (_xs - RMAR + 2, 485);
+    D.move (_xs - RMAR + 2, 490);
     D.drawstring ("Demulating", -1);
-    D.move (_xs - RMAR + 2, 568);
+    D.move (_xs - RMAR + 2, 573);
     D.drawstring ("WAV Recorder", -1);
-    D.move (_xs - RMAR + 2, 635);
+    D.move (_xs - RMAR + 2, 638);
     D.drawstring ("Curr value", -1);
-    D.move (_xs - RMAR + 2, 685);
+    D.move (_xs - RMAR + 2, 687);
     D.drawstring ("Output", -1);
     D.move (_xs - RMAR + 2, 745);
     D.drawstring ("Noise", -1);
