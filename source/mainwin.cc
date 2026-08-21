@@ -62,6 +62,16 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _rec_file_type = 0;
     _rec_action = 0;
 
+    // CSV vars
+    _is_accumulating_csv = false;
+    _is_scheduled_csv_acc = false;
+    _current_pass_count = 0;
+    _max_pass_count = 10;
+    _inter_samples_count = 0;
+    _dt_sched = 0.0f;
+    _dt_avg = 1.0f;
+    _dt_amnt = 10;
+
     _decimation_factor = 1000;
     _cutoff_freq = 6000.0f;
 
@@ -345,8 +355,11 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 case SI1_FREQ: set_f_si1 (_p_val); break;
                 case SI2_LEV:  set_a_si2 (_p_val); break;
                 case SI2_FREQ: set_f_si2 (_p_val); break;
+                case DT_SCHED: _dt_sched = _p_val; break;
+                case DT_AVG:   _dt_avg   = _p_val; break;
+                case DT_AMNT:  _dt_amnt  = (int)_p_val; break;
                 case HOSTF:
-                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validation
+                    if (_p_val >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) // Validation
                     {
                         _host_freq = _p_val;
                         if (_is_lsb_view)
@@ -363,7 +376,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case REC_DEC:
-                    if (_p_val >= 1.0f && !(_is_recording or _rec_scheduled)) // Decimacition factor cannot be less than 1
+                    if (_p_val >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) // Decimacition factor cannot be less than 1
                     {
                         _decimation_factor = (int)_p_val; 
                         set_param(REC_DEC);
@@ -374,7 +387,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case CUTOFF:
-                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled)) // Validación básica de frecuencia
+                    if (_p_val >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) // Validación básica de frecuencia
                     {
                         _cutoff_freq = _p_val;
                         set_param(CUTOFF);
@@ -385,7 +398,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case SCHED:
-                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled))
+                    if (_p_val >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc))
                     {
                         if (_p_val == 0.0f)
                         {
@@ -403,7 +416,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     }
                     break;
                 case TIMER:
-                    if (_p_val >= 0.0f && !(_is_recording or _rec_scheduled))
+                    if (_p_val >= 0.0f && !(_is_recording || _rec_scheduled  || _is_accumulating_csv || _is_scheduled_csv_acc))
                     {
                         _rec_duration = _p_val;
                         set_param(TIMER);
@@ -519,6 +532,14 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
 	case SI2_ACT:
             set_output (i - OP1);
             break;
+    case DT_SCHED:
+    case DT_AVG:
+    case DT_AMNT:
+        set_param (i);
+    break;
+    case DT_START_STOP:
+        toggle_csv_accumulation();
+    break;
     case HOSTF:
             set_param (HOSTF); 
             break;
@@ -538,7 +559,7 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             toggle_recording();
             break;
     case DEM_UDT:
-            if (!(_is_recording or _rec_scheduled))
+            if (!(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc))
             {
                 update_demulator();
             } else
@@ -870,6 +891,9 @@ void Mainwin::set_param (int i)
     case SI1_FREQ: _p_val = _f_si1; break;    
     case SI2_LEV:  _p_val = _a_si2; break;    
     case SI2_FREQ: _p_val = _f_si2; break;
+    case DT_SCHED: _p_val = _dt_sched; break;
+    case DT_AVG:   _p_val = _dt_avg; break;
+    case DT_AMNT:  _p_val = (float)_dt_amnt; break;
     case HOSTF: 
         _p_val = _host_freq;
         break;
@@ -1120,6 +1144,17 @@ void Mainwin::show_param (void)
     case SI1_LEV:
     case SI2_LEV:
         sprintf (s, "%2.1f dB", _p_val);
+        break;
+
+    case DT_SCHED:
+        if (_p_val > 0) sprintf (s, "%8.2f m", _p_val);
+        else sprintf (s, "NOW");
+        break;
+    case DT_AVG:
+        sprintf (s, "%8.2f s", _p_val);
+        break;
+    case DT_AMNT:
+        sprintf (s, "%8.0f", _p_val);
         break;
 
     case HOSTF:
@@ -1618,7 +1653,7 @@ void Mainwin::handle_trig ()
         else if (h) { if (p2 > *pow_d) *pow_d = p2; }
         else   *pow_d = p2;
 
-	update (); // Redraw now
+    accumulate_csv_data();
 
     if (_is_recording && (_rec_date_end > 0) && (_my_clock->get_fast_date() >= _rec_date_end))
     {
@@ -1632,6 +1667,191 @@ void Mainwin::handle_trig ()
         fprintf(stderr, "(Auto start)\n");
     }
 
+	update (); // Redraw now
+
+    }
+}
+
+
+// -----------------------------------------------------------------------------------------------
+void Mainwin::csv_export_init (time_t start_time, float averaging_time, int capture_amount)
+{
+    if (averaging_time <= 0.0f) averaging_time = 1.0f;
+    _current_pass_count = 0;
+    _csv_scheduled_count = 0;
+    _inter_samples_count = 0;
+    _max_pass_count = capture_amount;
+
+    // Estimación de cuadros FFT procesados por segundo en handle_trig()
+    float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+    _csv_capture_samp_between_captures = (int)(averaging_time * frames_per_sec);
+    if (_csv_capture_samp_between_captures < 1) _csv_capture_samp_between_captures = 1;
+
+    _csv_capture_duration = averaging_time * capture_amount;
+    _csv_capture_start_time = start_time;
+}
+
+size_t Mainwin::predict_memory_requirements (int capture_amount)
+{
+    int useful_len = _fftlen / 2;
+    _max_pass_count = capture_amount;
+    size_t exact_size = static_cast<size_t>(_max_pass_count) * useful_len;
+    
+    // Margen de tolerancia del 25%
+    size_t updated_size = exact_size + (exact_size / 4);
+    return updated_size;
+}
+
+void Mainwin::start_acumulator (time_t start_time, float averaging_time, int num_passes)
+{   
+    if (num_passes <= 0) num_passes = 1;
+    int useful_len = _fftlen / 2;
+
+    _csv_buffer.clear();
+    _csv_buffer.reserve(predict_memory_requirements(num_passes));
+    
+    csv_export_init(start_time, averaging_time, num_passes);
+
+    time_t now = _my_clock->get_fast_date();
+    if (start_time > now) {
+        _is_scheduled_csv_acc = true;
+        _is_accumulating_csv = false;
+        _butt [DT_START_STOP]->set_stat (1); // Estado programado
+    } else {
+        _is_scheduled_csv_acc = false;
+        _is_accumulating_csv = true;
+        _butt [DT_START_STOP]->set_stat (2); // Estado activo
+    }
+
+    fprintf(stderr, "%.2f MB en RAM reserved, %d passes (%d samples FFT/passs).\n", 
+            (_max_pass_count * useful_len * sizeof(float)) / (1024.0 * 1024.0), 
+            _max_pass_count, useful_len);
+}
+
+void Mainwin::accumulate_csv_data (void)
+{
+    if (!_is_accumulating_csv && !_is_scheduled_csv_acc) return;
+
+    time_t now = _my_clock->get_fast_date();
+
+    if (_is_scheduled_csv_acc)
+    {
+        if (now < _csv_capture_start_time) return;
+        _is_scheduled_csv_acc = false;
+        _is_accumulating_csv = true;
+        _butt [DT_START_STOP]->set_stat (2);
+
+        // activate Averaging
+        _butt [VIDAV]->set_stat (2); 
+        _butt [PEAKH]->set_stat (0);
+        _spect->_avcnt = 1;
+        _spect->_bits &= ~Spectdata::PEAKH;
+    }
+
+    int useful_len = _fftlen / 2;
+    
+    if (_current_pass_count < _max_pass_count) {
+        if (_inter_samples_count % _csv_capture_samp_between_captures == 0) {
+            _csv_buffer.insert(_csv_buffer.end(), _power_demod, _power_demod + useful_len);
+            _current_pass_count++;
+        }
+    } 
+    
+    if (_current_pass_count >= _max_pass_count) {
+        
+        // Stop averaging
+        _butt [VIDAV]->set_stat (0);
+        _spect->_avcnt = 0;
+        
+        stop_and_save_csv();
+    }
+
+    _inter_samples_count++;
+}
+
+void Mainwin::stop_and_save_csv (void)
+{   
+    if (!_is_accumulating_csv && !_is_scheduled_csv_acc) return;
+
+    _is_accumulating_csv = false;
+    _is_scheduled_csv_acc = false;
+    _inter_samples_count = 0;
+    
+    export_to_csv();
+    
+    _butt [DT_START_STOP]->set_stat (0);
+    fprintf(stderr, "Acumulation end. Passes captured: %d.\n", _current_pass_count);
+    _current_pass_count = 0;
+}
+
+void Mainwin::export_to_csv (const char *filename_override)
+{
+    if (_csv_buffer.empty()) return;
+
+    char filename[256];
+    char filename2[256];
+    if (filename_override && strlen(filename_override) > 0) {
+        strncpy(filename, filename_override, sizeof(filename) - 1);
+        filename[sizeof(filename) - 1] = '\0';
+        strncpy(filename2, filename_override, sizeof(filename2) - 1);
+        filename2[sizeof(filename2) - 1] = '\0';
+    } else {
+        time_t now = _my_clock->get_fast_date();
+        struct tm *tm_info = localtime(&now);
+        char date_str_end[64];
+        strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+        tm_info = localtime(&_csv_capture_start_time);
+        char date_str_start[64];
+        strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+        snprintf(filename, sizeof(filename), "spect_demod_%s__%s__%d_raw.csv", date_str_start, date_str_end, _current_pass_count);
+        fprintf(stderr, "Raw Values included in CSV file, to convert values to dB use: 'dB = 10 * log10f (Value + 1e-30f);\n'");
+        snprintf(filename2, sizeof(filename2), "spect_demod_%s__%s__%d_dB.csv", date_str_start, date_str_end, _current_pass_count);
+    }
+
+    std::ofstream file(filename, std::ios::out);
+    std::ofstream file2(filename2, std::ios::out);
+    if (!file.is_open()) {
+        fprintf(stderr, "Error: Can't open CSV %s\n", filename);
+        return;
+    }
+    if (!file2.is_open()) {
+        fprintf(stderr, "Error: Can't open CSV %s\n", filename2);
+        return;
+    }
+
+    int useful_len = _fftlen / 2;
+
+    // Write accumulated data matriz (passes x fequency bins)
+    for (int pass = 0; pass < _current_pass_count; ++pass) {
+        int offset = pass * useful_len;
+        for (int i = 0; i < useful_len; ++i) {
+            file << _csv_buffer[offset + i];
+            if (i < useful_len - 1) file << ",";
+            file2 << 10.0f * log10f(_csv_buffer[offset + i] + 1e-30f);
+            if (i < useful_len - 1) file2 << ",";
+        }
+        file << "\n";
+        file2 << "\n";
+    }
+
+    file.close();
+    file2.close();
+    
+    // free memory
+    std::vector<float>().swap(_csv_buffer);
+    fprintf(stderr, "CSV data exported correctly %s\n", filename);
+}
+
+void Mainwin::toggle_csv_accumulation (void)
+{
+    if (_is_accumulating_csv || _is_scheduled_csv_acc) {
+        stop_and_save_csv();
+    } else {
+        time_t start_time = _my_clock->get_fast_date();
+        if (_dt_sched > 0.0f) {
+            start_time += (time_t)(_dt_sched * 60.0f);
+        }
+        start_acumulator(start_time, _dt_avg, _dt_amnt);
     }
 }
 

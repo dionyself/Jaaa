@@ -28,6 +28,9 @@
 #include <fftw3.h>
 #include "styles.h"
 #include <ctime>
+#include <vector>
+#include <fstream>
+#include <cstring>
 
 
 #define XPOS  100
@@ -154,6 +157,34 @@ private:
         INP_MAX = BUF_LEN - FFT_MAX / 2,
         INP_LEN = 4096
     };
+
+    // CSV vars
+    bool                _is_accumulating_csv;
+    bool                _is_scheduled_csv_acc;
+    int                 _current_pass_count;
+    int                 _max_pass_count;
+    int                 _csv_scheduled_count;
+    int                 _csv_capture_samp_between_captures;
+    int                 _inter_samples_count;
+    time_t              _csv_capture_start_time;
+    float               _csv_capture_duration;
+
+    // CSV GUI vars
+    float               _dt_sched; // Start time (minutes)
+    float               _dt_avg;   // AVG interval (seconds)
+    int                 _dt_amnt;  // sample/passes amount
+
+    std::vector<float>  _csv_buffer;
+
+    // Methods CSV
+    void   csv_export_init (time_t start_time, float averaging_time, int capture_amount);
+    size_t predict_memory_requirements (int capture_amount);
+    void   start_acumulator (time_t start_time = 0, float averaging_time = 1.0f, int num_passes = 100);
+    void   accumulate_csv_data (void);
+    void   stop_and_save_csv (void);
+    void   export_to_csv (const char *filename_override = nullptr);
+    void   toggle_csv_accumulation (void);
+
 
     virtual void handle_event (XEvent *xe);
     virtual void handle_callb (int, X_window*, _XEvent*);
