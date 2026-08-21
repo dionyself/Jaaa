@@ -1672,8 +1672,6 @@ void Mainwin::handle_trig ()
     }
 }
 
-
-// -----------------------------------------------------------------------------------------------
 void Mainwin::csv_export_init (time_t start_time, float averaging_time, int capture_amount)
 {
     if (averaging_time <= 0.0f) averaging_time = 1.0f;
