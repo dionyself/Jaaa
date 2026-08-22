@@ -46,25 +46,6 @@
 #define TMAR  8
 #define BMAR  24
 
-class QuickTimer
-{
-private:
-    time_t date;
-    unsigned int counter;
-    const unsigned int INTERVAL;
-public:
-    QuickTimer(unsigned int interval = 10000) 
-        : date(time(nullptr)), counter(0), INTERVAL(interval) {}
-    time_t get_fast_date() {
-        counter++;
-        if (counter >= INTERVAL) {
-            date = time(nullptr);
-            counter = 0;
-        }
-        return date;
-    }
-};
-
 
 class Spectdata 
 {
@@ -163,7 +144,6 @@ private:
     bool                _is_scheduled_csv_acc;
     int                 _current_pass_count;
     int                 _max_pass_count;
-    int                 _csv_scheduled_count;
     int                 _csv_capture_samp_between_captures;
     int                 _inter_samples_count;
     time_t              _csv_capture_start_time;
@@ -247,7 +227,6 @@ private:
     X_textip   *_txt1;
     Spectdata  *_spect;
     ITC_ctrl   *_audio;
-    QuickTimer *_my_clock;
 
     int         _input;
     int         _drag;
@@ -299,6 +278,12 @@ private:
     int _rec_action;
     const char *_rec_fname_prefix;
     char _rec_filename[128];
+
+
+    long long _rec_start_countdown = 0;
+    long long _rec_samples_remaining = 0;
+
+    long long _csv_start_countdown = 0;
 };
 
 

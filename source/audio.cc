@@ -41,7 +41,7 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _data (0),
     _outs (0),
     _demulated_data (0),
-    _demod_decimation(1000),
+    _demod_decimation(256),
     _decim_counter(0)
 {
     _is_recording = false;
@@ -51,7 +51,7 @@ Audio::Audio (ITC_ctrl *cmain, const char *name) :
     _rec_capture_type = 0;
     _rec_file_type = 0;
     _rec_action = 0;
-    _rec_decimation_factor = 1000;
+    _rec_decimation_factor = 256;
     _rec_fsamp = 0;
     _rec_host_freq = 16384.0; // (32.768 Khz / 2)
     _rec_cutoff_freq = 6000.0;
@@ -89,7 +89,7 @@ void Audio::init (void)
     _wav_sample_count = 0;
     _demod_phase = 0.0;
     _demod_phase_inc = 0.0;
-    _demod_decimation = 100;
+    _demod_decimation = 256;
 }
 
 

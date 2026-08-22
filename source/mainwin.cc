@@ -69,13 +69,16 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     _max_pass_count = 10;
     _inter_samples_count = 0;
     _dt_sched = 0.0f;
-    _dt_avg = 1.0f;
+    _dt_avg = 50.0f;
     _dt_amnt = 10;
 
-    _decimation_factor = 1000;
+    _decimation_factor = 256;
     _cutoff_freq = 6000.0f;
 
-    _my_clock = new QuickTimer(100);
+
+    _rec_start_countdown = 0;
+    _rec_samples_remaining = 0;
+    _csv_start_countdown = 0;
 
     // Configure X11 protocols (Windows closing and focus)
     _atoms [0] = XInternAtom (dpy (), "WM_DELETE_WINDOW", True);
@@ -406,7 +409,12 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                         }
                         else
                         {
-                            _rec_date_start = _my_clock->get_fast_date() + (time_t)(_p_val * 60);
+                            _rec_date_start = time(nullptr) + (time_t)(_p_val * 60);
+
+
+                            float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+                            _rec_start_countdown = (long long)(_p_val * 60.0f * frames_per_sec);
+
                         }
                         set_param(SCHED);
                         redraw();
@@ -419,6 +427,11 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                     if (_p_val >= 0.0f && !(_is_recording || _rec_scheduled  || _is_accumulating_csv || _is_scheduled_csv_acc))
                     {
                         _rec_duration = _p_val;
+
+
+                        float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+                        _rec_samples_remaining = (long long)(_p_val * 60.0f * frames_per_sec);
+
                         set_param(TIMER);
                         redraw();
                     } else
@@ -469,28 +482,28 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             // Video averaging logic
             if (B->stat ())
      	    {
-        	B->set_stat (0);
+        	    B->set_stat (0);
                 _spect->_avcnt = 0;
-	    }
+	        }
             else 
      	    {
-		B->set_stat (2); 
-		_butt [PEAKH]->set_stat (0);
+		        B->set_stat (2); 
+		        _butt [PEAKH]->set_stat (0);
                 _spect->_avcnt = 1;
                 _spect->_bits &= ~Spectdata::PEAKH;
-	    }
+	        }
             break;
 
         case PEAKH:
             if (B->stat ())
      	    {
-		B->set_stat (0);
+		        B->set_stat (0);
                 _spect->_bits &= ~Spectdata::PEAKH;
-	    }
+	        }
             else 
      	    {
-		B->set_stat (2);
-		_butt [VIDAV]->set_stat (0);
+		        B->set_stat (2);
+		        _butt [VIDAV]->set_stat (0);
                 _spect->_bits |=  Spectdata::PEAKH;	
                 _spect->_avcnt = 0;
             }
@@ -1169,7 +1182,7 @@ void Mainwin::show_param (void)
     case SCHED:
         if (_p_val > 0)
         {
-            sprintf (s, "%8.2f mins", ((time_t)_p_val - _my_clock->get_fast_date()) / 60.0 );
+            sprintf (s, "%8.2f mins", ((time_t)_p_val - time(nullptr)) / 60.0 );
         }
         else
         {
@@ -1655,16 +1668,30 @@ void Mainwin::handle_trig ()
 
     accumulate_csv_data();
 
-    if (_is_recording && (_rec_date_end > 0) && (_my_clock->get_fast_date() >= _rec_date_end))
+    if (_is_recording && (_rec_date_end > 0))
     {
-        toggle_recording();
-        fprintf(stderr, "(Auto stop)\n");
+        if (_rec_samples_remaining < 1)
+        {
+            toggle_recording();
+            fprintf(stderr, "(Auto stop)\n");
+        } else
+        {
+            _rec_samples_remaining--;
+        }
+        
     }
 
-    if (!_is_recording && _rec_scheduled && (_rec_date_start > 0) && (_my_clock->get_fast_date() >= _rec_date_start))
+    if (!_is_recording && _rec_scheduled && (_rec_date_start > 0))
     {
-        toggle_recording();
-        fprintf(stderr, "(Auto start)\n");
+        if (_rec_start_countdown < 1)
+        {
+            toggle_recording();
+            fprintf(stderr, "(Auto start)\n");
+        } else
+        {
+            _rec_start_countdown--;
+        }
+        
     }
 
 	update (); // Redraw now
@@ -1676,11 +1703,9 @@ void Mainwin::csv_export_init (time_t start_time, float averaging_time, int capt
 {
     if (averaging_time <= 0.0f) averaging_time = 1.0f;
     _current_pass_count = 0;
-    _csv_scheduled_count = 0;
     _inter_samples_count = 0;
     _max_pass_count = capture_amount;
 
-    // Estimación de cuadros FFT procesados por segundo en handle_trig()
     float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
     _csv_capture_samp_between_captures = (int)(averaging_time * frames_per_sec);
     if (_csv_capture_samp_between_captures < 1) _csv_capture_samp_between_captures = 1;
@@ -1691,6 +1716,7 @@ void Mainwin::csv_export_init (time_t start_time, float averaging_time, int capt
 
 size_t Mainwin::predict_memory_requirements (int capture_amount)
 {
+    //int useful_len = _fftlen / 2;
     int useful_len = _fftlen / 2;
     _max_pass_count = capture_amount;
     size_t exact_size = static_cast<size_t>(_max_pass_count) * useful_len;
@@ -1703,14 +1729,13 @@ size_t Mainwin::predict_memory_requirements (int capture_amount)
 void Mainwin::start_acumulator (time_t start_time, float averaging_time, int num_passes)
 {   
     if (num_passes <= 0) num_passes = 1;
-    int useful_len = _fftlen / 2;
 
     _csv_buffer.clear();
     _csv_buffer.reserve(predict_memory_requirements(num_passes));
     
     csv_export_init(start_time, averaging_time, num_passes);
 
-    time_t now = _my_clock->get_fast_date();
+    time_t now = time(nullptr);
     if (start_time > now) {
         _is_scheduled_csv_acc = true;
         _is_accumulating_csv = false;
@@ -1721,20 +1746,21 @@ void Mainwin::start_acumulator (time_t start_time, float averaging_time, int num
         _butt [DT_START_STOP]->set_stat (2); // Estado activo
     }
 
-    fprintf(stderr, "%.2f MB en RAM reserved, %d passes (%d samples FFT/passs).\n", 
-            (_max_pass_count * useful_len * sizeof(float)) / (1024.0 * 1024.0), 
-            _max_pass_count, useful_len);
 }
 
 void Mainwin::accumulate_csv_data (void)
 {
     if (!_is_accumulating_csv && !_is_scheduled_csv_acc) return;
 
-    time_t now = _my_clock->get_fast_date();
+    
 
     if (_is_scheduled_csv_acc)
     {
-        if (now < _csv_capture_start_time) return;
+        if (_csv_start_countdown > 0)
+        {
+            _csv_start_countdown--;
+            return;
+        }
         _is_scheduled_csv_acc = false;
         _is_accumulating_csv = true;
         _butt [DT_START_STOP]->set_stat (2);
@@ -1746,7 +1772,18 @@ void Mainwin::accumulate_csv_data (void)
         _spect->_bits &= ~Spectdata::PEAKH;
     }
 
-    int useful_len = _fftlen / 2;
+    if (_is_accumulating_csv && _current_pass_count == 0 && _inter_samples_count == 0) {
+        // activate Averaging
+        _butt [VIDAV]->set_stat (2); 
+        _butt [PEAKH]->set_stat (0);
+        _spect->_avcnt = 1;
+        _spect->_bits &= ~Spectdata::PEAKH;
+        _inter_samples_count++;
+        return;
+    }
+
+    //int useful_len = _fftlen / 2;
+    int useful_len = _fftlen;
     
     if (_current_pass_count < _max_pass_count) {
         if (_inter_samples_count % _csv_capture_samp_between_captures == 0) {
@@ -1762,6 +1799,7 @@ void Mainwin::accumulate_csv_data (void)
         _spect->_avcnt = 0;
         
         stop_and_save_csv();
+        _inter_samples_count = 0;
     }
 
     _inter_samples_count++;
@@ -1794,7 +1832,7 @@ void Mainwin::export_to_csv (const char *filename_override)
         strncpy(filename2, filename_override, sizeof(filename2) - 1);
         filename2[sizeof(filename2) - 1] = '\0';
     } else {
-        time_t now = _my_clock->get_fast_date();
+        time_t now = time(nullptr);
         struct tm *tm_info = localtime(&now);
         char date_str_end[64];
         strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
@@ -1817,7 +1855,8 @@ void Mainwin::export_to_csv (const char *filename_override)
         return;
     }
 
-    int useful_len = _fftlen / 2;
+    //int useful_len = _fftlen / 2;
+    int useful_len = _fftlen;
 
     // Write accumulated data matriz (passes x fequency bins)
     for (int pass = 0; pass < _current_pass_count; ++pass) {
@@ -1845,9 +1884,12 @@ void Mainwin::toggle_csv_accumulation (void)
     if (_is_accumulating_csv || _is_scheduled_csv_acc) {
         stop_and_save_csv();
     } else {
-        time_t start_time = _my_clock->get_fast_date();
+        time_t start_time = time(nullptr);
         if (_dt_sched > 0.0f) {
             start_time += (time_t)(_dt_sched * 60.0f);
+            //_csv_start_countdown = (long long)(_dt_sched * 60.0f * _fsamp);
+            float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+            _csv_start_countdown = (long long)(_dt_sched * 60.0f * frames_per_sec);
         }
         start_acumulator(start_time, _dt_avg, _dt_amnt);
     }
@@ -2055,6 +2097,7 @@ void Mainwin::calc_peak (float *f, float *p, float r)
     *p = a * a;
 }
 
+
 void Mainwin::toggle_recording(void)
 {
 
@@ -2068,54 +2111,83 @@ void Mainwin::toggle_recording(void)
     rec_f_info->_rec_decimation_factor = _decimation_factor;
     rec_f_info->_rec_host_freq = _host_freq;
 
+    time_t now = time(nullptr);
+    float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+    _rec_samples_remaining = (long long)(_rec_duration * 60.0f * frames_per_sec);
+
     if (_is_recording)
     {
-        strncpy(rec_f_info->_rec_filename, _rec_filename, 125);
-        rec_f_info->_rec_filename[126] = '\0';
+        
+        struct tm *tm_info = localtime(&_rec_date_start);
+        char date_str_start[64];
+        char date_str_end[64];
+        char filename[256];
+
+        // Formato: YYYYMMDD_HHMMSS
+        strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+        tm_info = localtime(&now);
+        strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+        sprintf(filename, "%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start, date_str_end, _decimation_factor);
+        strncpy(_rec_filename, filename, 126);
+        _rec_filename[127] = '\0';
+        strncpy(rec_f_info->_rec_filename, filename, 126);
+        rec_f_info->_rec_filename[127] = '\0';
+
         _audio->put_event (EV_MESG, rec_f_info);
         _is_recording = false;
         _rec_scheduled = false;
         _rec_date_end = 0;
         _rec_date_start = 0;
         _butt[REC_STOP]->set_stat(0);
-        fprintf(stderr, "Stoped Recording (event emited)\n");
+        fprintf(stderr, "Stopped Recording (event emited)\n");
         return;
     }
     else
     {   
-
-        time_t now = _my_clock->get_fast_date();
         _is_recording = true;
         _rec_scheduled = false;
 
         if (_rec_date_start == 0)
         {
-            
-            if (_rec_duration > 0.59f)
+            _rec_start_countdown = 0;
+            if (_rec_duration > 0.99f)
             {
                 _rec_date_end = now + (time_t)(_rec_duration * 60);
                 fprintf(stderr, "Normal Recording ...\n");
             }
-            else if (0 < _rec_duration && _rec_duration  <= 0.59f)
+            else if (0 < _rec_duration && _rec_duration  <= 0.99f)
             {
                 _is_recording = false;
                 _rec_date_end = 0;
-                fprintf(stderr, "Invalid Timer/Duration\n");
+                fprintf(stderr, "Error: Invalid Timer/Duration, Recordind duration shouldbe at least 1 minute\n");
                 return;
             }
             else
             {
                 _rec_date_end = 0;
-                fprintf(stderr, "Record forever ...\n");
+                fprintf(stderr, "Duration = 0, Will record forever ...\n");
             }
         }
-        else if (_rec_date_start > now + (time_t)(0.59f * 60) && _rec_duration >= 0.59f && _rec_date_end == 0)
+        else if (_rec_date_start > now + (time_t)(0.99f * 60) && (_rec_duration == 0 || _rec_duration > 0.99f) && _rec_date_end == 0)
         {
             _is_recording = false;
-            _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+            if (_rec_duration == 0)
+            {
+                _rec_date_end = 0;
+                fprintf(stderr, "Scheduled; Duration = 0, Will record forever ...\n");
+            } else if (0 < _rec_duration && _rec_duration  <= 0.99f)
+            {
+                _rec_date_end = 0;
+                fprintf(stderr, "Error: Invalid Timer/Duration, Recordind duration shouldbe at least 1 minute\n");
+                return;
+            }else
+            {
+                _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+            }
+            
             _rec_scheduled = true;
             _butt[REC_STOP]->set_stat(1);
-            fprintf(stderr, "Record scheduled\n");
+            fprintf(stderr, "Record scheduled, countdown:%lld \n", _rec_start_countdown);
             return;
         }
 
@@ -2123,12 +2195,21 @@ void Mainwin::toggle_recording(void)
         rec_f_info->_rec_action = 1;
 
         struct tm *tm_info = localtime(&now);
-        char date_str[64];
-        char filename[128];
+        char date_str_start[64];
+        char date_str_end[64];
+        char filename[256];
         
         // Formato: YYYYMMDD_HHMMSS
-        strftime(date_str, sizeof(date_str), "%Y%m%d_%H%M%S", tm_info); 
-        sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str, _decimation_factor);
+        strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+        tm_info = localtime(&_rec_date_end);
+        strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+        if (_rec_date_end == 0)
+        {
+            sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str_start, _decimation_factor);
+        } else
+        {
+            sprintf(filename, "%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start, date_str_end, _decimation_factor);
+        }
         strncpy(_rec_filename, filename, 126);
         _rec_filename[127] = '\0';
         strncpy(rec_f_info->_rec_filename, filename, 126);
