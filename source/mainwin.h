@@ -32,15 +32,15 @@
 #include <fstream>
 #include <cstring>
 
-
-#define XPOS  100
-#define YPOS  100
+// Window dimensions and position
+#define XPOS  50
+#define YPOS  50
 #define XMIN  600
 #define YMIN  430
-#define XDEF  1200
-#define YDEF  900
-#define XMAX  1200
-#define YMAX  900
+#define XDEF  1280
+#define YDEF  960
+#define XMAX  1280
+#define YMAX  960
 #define LMAR  40
 #define RMAR  80
 #define TMAR  8
@@ -127,6 +127,7 @@ private:
         DT_AVG,
         DT_AMNT,
         DT_START_STOP,
+        AVMAX,
         NBUTT
     };
 

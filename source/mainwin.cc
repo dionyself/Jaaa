@@ -121,6 +121,8 @@ Mainwin::Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio) :
     // Analitic buttons
     Bst1.size.x = RMAR - 6;
     _butt [BANDW] = new X_tbutton (this, this, &Bst1, x, y, "Bandw",   0, BANDW);
+    y += Bst1.size.y;
+    _butt [AVMAX] = new X_tbutton (this, this, &Bst1, x, y, "Av.Max",  0, AVMAX);
     y += Bst1.size.y;  
     _butt [VIDAV] = new X_tbutton (this, this, &Bst1, x, y, "Vid.Av",  0, VIDAV);
     y += Bst1.size.y;
@@ -347,6 +349,30 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
                 switch (_p_ind)
                 {
                 case BANDW: set_bw (_p_val); break;
+                case AVMAX:
+                    if (_p_val >= 2 && _p_val <= 100000)
+                    {
+                        
+                        if (_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)
+                        {
+                            fprintf(stderr, "Error: You cannot update Host frequency settings while Recording\n");
+                        } else
+                        {
+                            _spect->_avmax = _p_val;
+                            set_param(AVMAX);
+                            //_spect->_avcnt = 0;
+                            if (_butt [VIDAV]->stat ())
+                            {
+                                _spect->_avcnt = 1;
+                                _spect->_bits &= ~Spectdata::PEAKH;
+                            }
+                            redraw();
+                        }
+                    } else
+                    {
+                        fprintf(stderr, "Error: Vid averaging should be between 2 ands 100000\n");
+                    }
+                    break;
                 case FMIN:  set_f0 (_p_val); break;
                 case FMAX:  set_f1 (_p_val); break;
                 case FCENT: set_fc (_p_val); break;
@@ -462,7 +488,10 @@ void Mainwin::handle_callb (int k, X_window *W, _XEvent *E )
             break;
 
 	case BANDW:
-        case MPEAK:
+    case AVMAX:
+    //    set_param (AVMAX);
+    //    break;
+    case MPEAK:
 	case MNSE:
 	case FMIN:
 	case FMAX:
@@ -703,29 +732,29 @@ void Mainwin::redraw (void)
     D.drawstring ("Input", -1);
     D.move (_xs - RMAR + 2, 60);
     D.drawstring ("Analyser", -1);
-    D.move (_xs - RMAR + 2, 143);
+    D.move (_xs - RMAR + 2, 160);
     D.drawstring ("Markers", -1);
-    D.move (_xs - RMAR + 2, 210);
+    D.move (_xs - RMAR + 2, 225);
     D.drawstring ("Frequency", -1);
-    D.move (_xs - RMAR + 2, 293);
+    D.move (_xs - RMAR + 2, 310);
     D.drawstring ("Amplitude", -1);
-    D.move (_xs - RMAR + 2, 343);
+    D.move (_xs - RMAR + 2, 358);
     D.drawstring ("Modes", -1);
-    D.move (_xs - RMAR + 2, 408);
-    D.drawstring ("Export DATA", -1);
-    D.move (_xs - RMAR + 2, 490);
+    D.move (_xs - RMAR + 2, 425);
+    D.drawstring ("Export CSV", -1);
+    D.move (_xs - RMAR + 2, 508);
     D.drawstring ("Demulating", -1);
-    D.move (_xs - RMAR + 2, 573);
+    D.move (_xs - RMAR + 2, 590);
     D.drawstring ("WAV Recorder", -1);
-    D.move (_xs - RMAR + 2, 638);
+    D.move (_xs - RMAR + 2, 656);
     D.drawstring ("Curr value", -1);
-    D.move (_xs - RMAR + 2, 687);
+    D.move (_xs - RMAR + 2, 703);
     D.drawstring ("Output", -1);
-    D.move (_xs - RMAR + 2, 745);
+    D.move (_xs - RMAR + 2, 760);
     D.drawstring ("Noise", -1);
-    D.move (_xs - RMAR + 2, 785);
+    D.move (_xs - RMAR + 2, 800);
     D.drawstring ("Sine1", -1);
-    D.move (_xs - RMAR + 2, 840);
+    D.move (_xs - RMAR + 2, 855);
     D.drawstring ("Sine2", -1);
 
     plot_fscale ();
@@ -893,6 +922,7 @@ void Mainwin::set_param (int i)
     switch (i)
     {
     case BANDW: _p_val = _bw; break;
+    case AVMAX: _p_val = _spect->_avmax; break;
     case FMIN:  _p_val = _f0; break;
     case FMAX:  _p_val = _f1; break;
     case FCENT: _p_val = _fc; break;
@@ -1137,6 +1167,7 @@ void Mainwin::show_param (void)
     switch (_p_ind)
     {
     case BANDW:
+    case AVMAX:
     case FMIN:
     case FMAX:
     case FCENT:
