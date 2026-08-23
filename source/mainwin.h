@@ -2,7 +2,7 @@
 //
 //  Copyright (C) 2004-2018 Fons Adriaensen <fons@linuxaudio.org>
 //  Copyright (C) 2026 Dionys Rosario <dionyself@gmail.com>
-//    
+//
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation; either version 2 of the License, or
@@ -18,274 +18,298 @@
 //
 // ----------------------------------------------------------------------------
 
-
 #ifndef __MAINWIN_H
 #define __MAINWIN_H
 
-
-#include <clxclient.h>
-#include <clthreads.h>
-#include <fftw3.h>
 #include "styles.h"
-#include <ctime>
-#include <vector>
-#include <fstream>
+#include <clthreads.h>
+#include <clxclient.h>
 #include <cstring>
+#include <ctime>
+#include <fftw3.h>
+#include <fstream>
+#include <vector>
 
 // Window dimensions and position
-#define XPOS  50
-#define YPOS  50
-#define XMIN  600
-#define YMIN  430
-#define XDEF  1280
-#define YDEF  960
-#define XMAX  1280
-#define YMAX  960
-#define LMAR  40
-#define RMAR  80
-#define TMAR  8
-#define BMAR  24
+#define XPOS 50
+#define YPOS 50
+#define XMIN 600
+#define YMIN 430
+#define XDEF 1280
+#define YDEF 960
+#define XMAX 1280
+#define YMAX 960
+#define LMAR 40
+#define RMAR 80
+#define TMAR 8
+#define BMAR 24
 
-
-class Spectdata 
-{
+class Spectdata {
 public:
+  enum {
+    MK1_SET = 1,
+    MK1_NSE = 2,
+    MK2_SET = 4,
+    MK2_NSE = 8,
+    RESET = 16,
+    PEAKH = 32,
+    FREEZE = 64,
+    YP_VAL = 256,
+    YM_VAL = 512
+  };
 
-    enum { MK1_SET = 1, MK1_NSE = 2, MK2_SET = 4, MK2_NSE = 8, RESET = 16, PEAKH = 32, FREEZE = 64, YP_VAL = 256, YM_VAL = 512 };
+  Spectdata(int size) {
+    _yp = new float[size];
+    _ym = new float[size];
+    _yp2 = new float[size];
+    _ym2 = new float[size];
+  }
+  ~Spectdata(void) {
+    delete[] _yp;
+    delete[] _ym;
+    delete[] _yp2;
+    delete[] _ym2;
+  }
 
-    Spectdata (int size)
-    {
-        _yp = new float [size];
-        _ym = new float [size];
-        _yp2 = new float [size];
-        _ym2 = new float [size];
-    }
-    ~Spectdata (void)
-    {
-        delete[] _yp;
-        delete[] _ym;
-        delete[] _yp2;
-        delete[] _ym2;
-    }
-
-    int    _npix;
-    int    _bits;
-    int    _avcnt;
-    int    _avmax;
-    float  _bw;
-    float  _f0;
-    float  _f1;
-    float  _mk1f;
-    float  _mk1p;
-    float  _mk2f;
-    float  _mk2p;
-    char  *_xf;
-    float *_yp;        
-    float *_ym;
-    float *_yp2;        
-    float *_ym2;
+  int _npix;
+  int _bits;
+  int _avcnt;
+  int _avmax;
+  float _bw;
+  float _f0;
+  float _f1;
+  float _mk1f;
+  float _mk1p;
+  float _mk2f;
+  float _mk2p;
+  char *_xf;
+  float *_yp;
+  float *_ym;
+  float *_yp2;
+  float *_ym2;
 };
 
-
-class Mainwin : public X_window, public X_callback
-{
+class Mainwin : public X_window, public X_callback {
 public:
+  Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio);
+  ~Mainwin(void);
+  bool running(void) const { return _running; }
+  void handle_trig(void);
+  void handle_term(void) { _running = 0; }
+  void handle_mesg(ITC_mesg *);
 
-    Mainwin (X_window *parent, X_resman *xres, ITC_ctrl *audio);
-    ~Mainwin (void);
-    bool running (void) const { return _running; }
-    void handle_trig (void);
-    void handle_term (void) { _running = 0; }
-    void handle_mesg (ITC_mesg *);
- 
 private:
+  enum {
+    IP1,
+    IP2,
+    IP3,
+    IP4,
+    IP5,
+    IP6,
+    IP7,
+    IP8,
+    BANDW,
+    VIDAV,
+    PEAKH,
+    FREEZ,
+    MCLR,
+    MPEAK,
+    MNSE,
+    FMIN,
+    FMAX,
+    FCENT,
+    FSPAN,
+    AMAX,
+    ASPAN,
+    BTUP,
+    BTDN,
+    OP1,
+    OP2,
+    OP3,
+    OP4,
+    OP5,
+    OP6,
+    OP7,
+    OP8,
+    NSE_ACT,
+    SI1_ACT,
+    SI2_ACT,
+    NSE_LEV,
+    SI1_LEV,
+    SI1_FREQ,
+    SI2_LEV,
+    SI2_FREQ,
+    HOSTF,
+    DMOD,
+    REC_DEC,
+    CUTOFF,
+    SCHED,
+    TIMER,
+    REC_STOP,
+    DEM_UDT,
+    ULF_MOD,
+    ELF_MOD,
+    DT_SCHED,
+    DT_AVG,
+    DT_AMNT,
+    DT_START_STOP,
+    AVMAX,
+    NBUTT
+  };
 
-    enum
-    { 
-        IP1, IP2, IP3, IP4,
-        IP5, IP6, IP7, IP8,
-        BANDW, VIDAV, PEAKH, FREEZ,
-        MCLR, MPEAK, MNSE,
-        FMIN, FMAX, FCENT, FSPAN,
-        AMAX, ASPAN,
-        BTUP, BTDN,
-        OP1, OP2, OP3, OP4,
-        OP5, OP6, OP7, OP8,
-        NSE_ACT, SI1_ACT, SI2_ACT,
-        NSE_LEV, SI1_LEV, SI1_FREQ, SI2_LEV, SI2_FREQ,
-        HOSTF,
-        DMOD,
-        REC_DEC,
-        CUTOFF,
-        SCHED,
-        TIMER,
-        REC_STOP,
-        DEM_UDT,
-        ULF_MOD,
-        ELF_MOD,
-        DT_SCHED,
-        DT_AVG,
-        DT_AMNT,
-        DT_START_STOP,
-        AVMAX,
-        NBUTT
-    };
+  enum {
+    FFT_MIN = 256,
+    FFT_MAX = 1024 * 256,
+    BUF_LEN = 2 * FFT_MAX,
+    INP_MAX = BUF_LEN - FFT_MAX / 2,
+    INP_LEN = 4096
+  };
 
-    enum 
-    {
-        FFT_MIN = 256,
-        FFT_MAX = 1024 * 256,
-        BUF_LEN = 2 * FFT_MAX,
-        INP_MAX = BUF_LEN - FFT_MAX / 2,
-        INP_LEN = 4096
-    };
+  // CSV vars
+  bool _is_accumulating_csv;
+  bool _is_scheduled_csv_acc;
+  int _current_pass_count;
+  int _max_pass_count;
+  int _csv_capture_samp_between_captures;
+  int _inter_samples_count;
+  time_t _csv_capture_start_time;
+  float _csv_capture_duration;
 
-    // CSV vars
-    bool                _is_accumulating_csv;
-    bool                _is_scheduled_csv_acc;
-    int                 _current_pass_count;
-    int                 _max_pass_count;
-    int                 _csv_capture_samp_between_captures;
-    int                 _inter_samples_count;
-    time_t              _csv_capture_start_time;
-    float               _csv_capture_duration;
+  // CSV GUI vars
+  float _dt_sched; // Start time (minutes)
+  float _dt_avg;   // AVG interval (seconds)
+  int _dt_amnt;    // sample/passes amount
 
-    // CSV GUI vars
-    float               _dt_sched; // Start time (minutes)
-    float               _dt_avg;   // AVG interval (seconds)
-    int                 _dt_amnt;  // sample/passes amount
+  std::vector<float> _csv_buffer;
 
-    std::vector<float>  _csv_buffer;
+  // Methods CSV
+  void csv_export_init(time_t start_time, float averaging_time,
+                       int capture_amount);
+  size_t predict_memory_requirements(int capture_amount);
+  void start_acumulator(time_t start_time = 0, float averaging_time = 1.0f,
+                        int num_passes = 100);
+  void accumulate_csv_data(void);
+  void stop_and_save_csv(void);
+  void export_to_csv(const char *filename_override = nullptr);
+  void toggle_csv_accumulation(void);
 
-    // Methods CSV
-    void   csv_export_init (time_t start_time, float averaging_time, int capture_amount);
-    size_t predict_memory_requirements (int capture_amount);
-    void   start_acumulator (time_t start_time = 0, float averaging_time = 1.0f, int num_passes = 100);
-    void   accumulate_csv_data (void);
-    void   stop_and_save_csv (void);
-    void   export_to_csv (const char *filename_override = nullptr);
-    void   toggle_csv_accumulation (void);
+  virtual void handle_event(XEvent *xe);
+  virtual void handle_callb(int, X_window *, _XEvent *);
 
+  void message(XClientMessageEvent *);
+  void expose(XExposeEvent *);
+  void resize(XConfigureEvent *);
+  void redraw(void);
+  void update(void);
+  void bpress(XButtonEvent *);
+  void motion(XPointerMovedEvent *);
+  void brelse(XButtonEvent *);
 
-    virtual void handle_event (XEvent *xe);
-    virtual void handle_callb (int, X_window*, _XEvent*);
+  void set_fsamp(unsigned int fsamp, bool symm);
+  void set_input(int i);
+  void set_output(int i);
+  void set_param(int i);
+  void mod_param(bool inc);
+  void set_bw(float);
+  void set_f0(float);
+  void set_f1(float);
+  void set_fc(float);
+  void set_fs(float);
+  void set_a1(float);
+  void set_ar(float);
+  void set_a_nse(float);
+  void set_a_si1(float);
+  void set_f_si1(float);
+  void set_a_si2(float);
+  void set_f_si2(float);
+  void send_genp(void);
+  void set_mark(float f, bool nse);
+  void clr_mark(void);
+  void show_param(void);
+  void plot_fscale(void);
+  void plot_ascale(void);
+  void plot_clear(void);
+  void plot_grid(void);
+  void plot_spect(Spectdata *);
+  void plot_annot(Spectdata *);
+  void alloc_fft(Spectdata *);
+  void calc_spect(Spectdata *);
+  float calcfreq(int x);
+  float conv0(fftwf_complex *);
+  float conv1(fftwf_complex *);
+  void calc_noise(float *f, float *p);
+  void calc_peak(float *f, float *p, float r);
+  void print_note(char *s, float f);
+  void toggle_recording(void);
+  void update_demulator(void);
 
-    void message (XClientMessageEvent *);
-    void expose (XExposeEvent *);
-    void resize (XConfigureEvent *);
-    void redraw (void);
-    void update (void);
-    void bpress (XButtonEvent *);
-    void motion (XPointerMovedEvent *);
-    void brelse (XButtonEvent *);
+  int _xs, _ys;
+  int _running;
+  Atom _atoms[2];
+  Atom _wmpro;
+  X_window *_plotwin;
+  Pixmap _plotmap;
+  GC _plotgct;
+  X_button *_butt[NBUTT];
+  X_textip *_txt1;
+  Spectdata *_spect;
+  ITC_ctrl *_audio;
 
-    void set_fsamp (unsigned int fsamp, bool symm);
-    void set_input (int i);
-    void set_output (int i);
-    void set_param (int i);
-    void mod_param (bool inc);
-    void set_bw (float);
-    void set_f0 (float);
-    void set_f1 (float);
-    void set_fc (float);
-    void set_fs (float);
-    void set_a1 (float);
-    void set_ar (float);
-    void set_a_nse (float);
-    void set_a_si1 (float);
-    void set_f_si1 (float);
-    void set_a_si2 (float);
-    void set_f_si2 (float);
-    void send_genp (void);
-    void set_mark (float f, bool nse);
-    void clr_mark (void);
-    void show_param (void);
-    void plot_fscale (void);
-    void plot_ascale (void);
-    void plot_clear (void);
-    void plot_grid (void);
-    void plot_spect (Spectdata *);
-    void plot_annot (Spectdata *);
-    void alloc_fft (Spectdata *);    
-    void calc_spect (Spectdata *);
-    float calcfreq (int x);
-    float conv0 (fftwf_complex *);
-    float conv1 (fftwf_complex *);
-    void calc_noise (float *f, float *p);
-    void calc_peak (float *f, float *p, float r);
-    void print_note (char *s, float f);
-    void toggle_recording(void);
-    void update_demulator(void);
+  int _input;
+  int _drag;
+  int _xd, _yd;
+  int _p_ind;
+  float _p_val;
+  float _fsamp;
+  float _funit;
+  const char *_fform;
+  float _bmin, _bmax, _bw;
+  float _fmin, _fmax, _f0, _f1, _fc, _fm, _df;
+  float _amin, _amax, _a0, _a1, _da;
+  float _a_nse, _a_si1, _f_si1, _a_si2, _f_si2;
+  int _g_bits;
+  int _ngx, _grx[40];
+  int _ngy, _gry[20];
 
-    int         _xs, _ys;
-    int         _running;
-    Atom        _atoms [2];
-    Atom        _wmpro;
-    X_window   *_plotwin;
-    Pixmap      _plotmap;
-    GC          _plotgct;
-    X_button   *_butt [NBUTT];
-    X_textip   *_txt1;
-    Spectdata  *_spect;
-    ITC_ctrl   *_audio;
+  fftwf_complex *_trbuf;
+  fftwf_plan _fftplan;
+  float *_ipbuf;
+  float *_ipbuf_demod;
+  float *_fftbuf;
+  float *_power;
+  fftwf_complex *_trbuf_demod;
+  fftwf_plan _fftplan_demod;
+  float *_fftbuf_demod;
+  float *_power_demod;
+  int _fftlen;
+  int _ipmod;
+  int _ipcnt;
+  float _ptot;
 
-    int         _input;
-    int         _drag;
-    int         _xd, _yd;
-    int         _p_ind;
-    float       _p_val;
-    float       _fsamp;
-    float       _funit;
-    const char *_fform;
-    float       _bmin, _bmax, _bw;
-    float       _fmin, _fmax, _f0, _f1, _fc, _fm, _df;
-    float       _amin, _amax, _a0, _a1, _da;
-    float       _a_nse, _a_si1, _f_si1, _a_si2, _f_si2;
-    int         _g_bits;
-    int         _ngx, _grx [40];
-    int         _ngy, _gry [20];
+  const static char *_formats[9];
+  const static char *_notes[12];
 
-    fftwf_complex  *_trbuf;
-    fftwf_plan      _fftplan; 
-    float          *_ipbuf;
-    float          *_ipbuf_demod;
-    float          *_fftbuf;
-    float          *_power;
-    fftwf_complex  *_trbuf_demod;
-    fftwf_plan      _fftplan_demod; 
-    float          *_fftbuf_demod;
-    float          *_power_demod;
-    int             _fftlen;
-    int             _ipmod;
-    int             _ipcnt;
-    float           _ptot;
+  float _host_freq;
+  float _cutoff_freq;
+  bool _is_lsb_view;
+  int _decimation_factor;
 
-    const static char *_formats [9];
-    const static char *_notes [12];
+  // Rec vars
+  bool _is_recording;
+  bool _rec_scheduled;
+  float _rec_duration;
+  time_t _rec_date_start;
+  time_t _rec_date_end;
+  int _rec_capture_type;
+  int _rec_file_type;
+  int _rec_action;
+  const char *_rec_fname_prefix;
+  char _rec_filename[128];
 
-    float _host_freq;
-    float _cutoff_freq;
-    bool _is_lsb_view;
-    int _decimation_factor;
+  long long _rec_start_countdown = 0;
+  long long _rec_samples_remaining = 0;
 
-    // Rec vars
-    bool _is_recording;
-    bool _rec_scheduled;
-    float _rec_duration;
-    time_t _rec_date_start;
-    time_t _rec_date_end;
-    int _rec_capture_type;
-    int _rec_file_type;
-    int _rec_action;
-    const char *_rec_fname_prefix;
-    char _rec_filename[128];
-
-
-    long long _rec_start_countdown = 0;
-    long long _rec_samples_remaining = 0;
-
-    long long _csv_start_countdown = 0;
+  long long _csv_start_countdown = 0;
 };
-
 
 #endif

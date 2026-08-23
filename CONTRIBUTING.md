@@ -67,7 +67,7 @@ To build, test, and format code for JAAA, ensure your development environment ha
    ```
 3. **Configure Upstream Remote:**
    ```bash
-   git remote add upstream https://github.com/jaaa-org/jaaa.git
+   git remote add upstream https://github.com/dionyself/jaaa.git
    git fetch upstream
    ```
 4. **Create a Topic Branch:**
@@ -142,7 +142,7 @@ find src include -type f \( -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -na
 ```
 
 #### Core Style Rules
-* **Indentation:** 4 spaces (no tab characters).
+* **Indentation:** 2 spaces (no tab characters).
 * **Line Width:** 80–100 characters maximum.
 * **Brace Style:** Attach braces to control statements (`if`, `for`, `while`, `switch`) and function definitions as specified in `.clang-format`.
 * **Explicit Bracing:** Always use braces `{}` for single-line conditional blocks or loops.
