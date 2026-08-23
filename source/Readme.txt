@@ -1,3 +1,6 @@
+#csv_viewer dependencies
+pip install pandas matplotlib numpy
+
 # Dev Requirements (sudo apt install <pkg name>)
 libclthreads-dev
 libclxclient-dev

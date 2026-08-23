@@ -240,7 +240,8 @@ Mouse wheel Increment/decrement current parameter
 ### Building from Source
 ```
 # Install dependencies (Debian/Ubuntu)
-sudo apt-get install libfftw3-dev libjack-jackd2-dev libxft-dev
+sudo apt-get install libfftw3-dev libjack-jackd2-dev libxft-dev \
+libclthreads-dev libclxclient-dev libzita-alsa-pcmi-dev libjack-dev
 
 # Build
 make
