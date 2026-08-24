@@ -211,6 +211,12 @@ private:
   void set_param(int i);
   void mod_param(bool inc);
   void set_bw(float);
+  void set_vamax(float);
+  void set_host_f(float);
+  void set_rec_dec(float);
+  void set_cutoff(float);
+  void set_sched(float);
+  void set_rec_dt(float);
   void set_f0(float);
   void set_f1(float);
   void set_fc(float);

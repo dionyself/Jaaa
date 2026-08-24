@@ -359,26 +359,7 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
           set_bw(_p_val);
           break;
         case AVMAX:
-          if (_p_val >= 2 && _p_val <= 100000) {
-
-            if (_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc) {
-              fprintf(stderr, "Error: You cannot update Host frequency "
-                              "settings while Recording\n");
-            } else {
-              _spect->_avmax = _p_val;
-              set_param(AVMAX);
-              //_spect->_avcnt = 0;
-              if (_butt[VIDAV]->stat()) {
-                _spect->_avcnt = 1;
-                _spect->_bits &= ~Spectdata::PEAKH;
-              }
-              redraw();
-            }
-          } else {
-            fprintf(stderr,
-                    "Error: Vid averaging should be between 2 ands 100000\n");
-          }
+          set_vamax(_p_val);
           break;
         case FMIN:
           set_f0(_p_val);
@@ -423,92 +404,19 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
           _dt_amnt = (int)_p_val;
           break;
         case HOSTF:
-          if (_p_val >= 0.0f &&
-              !(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc)) // Validation
-          {
-            _host_freq = _p_val;
-            if (_is_lsb_view) {
-              _f0 = 0.0f;
-              set_f1(_host_freq);
-              set_param(HOSTF);
-            }
-
-            redraw();
-          } else {
-            fprintf(stderr, "Error: You cannot update Host frequency settings "
-                            "while Recording\n");
-          }
+          set_host_f(_p_val);
           break;
         case REC_DEC:
-          if (_p_val >= 1.0f &&
-              !(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc)) // Decimacition factor cannot be less
-                                        // than 1
-          {
-            _decimation_factor = (int)_p_val;
-            set_param(REC_DEC);
-            redraw();
-          } else {
-            fprintf(stderr, "Error: You cannot update decimation settings "
-                            "while Recording\n");
-          }
+          set_rec_dec(_p_val);
           break;
         case CUTOFF:
-          if (_p_val >= 0.0f &&
-              !(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc)) // Validación básica de frecuencia
-          {
-            _cutoff_freq = _p_val;
-            set_param(CUTOFF);
-            redraw();
-          } else {
-            fprintf(stderr, "Error: You cannot update cutoff frequency "
-                            "settings while Recording\n");
-          }
+          set_cutoff(_p_val);
           break;
         case SCHED:
-          if (_p_val >= 0.0f &&
-              !(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc)) {
-            if (_p_val == 0.0f) {
-              _rec_date_start = _p_val;
-            } else {
-              _rec_date_start = time(nullptr) + (time_t)(_p_val * 60);
-
-              float frames_per_sec = (_ipmod * INP_LEN > 0)
-                                         ? ((float)_fsamp / (_ipmod * INP_LEN))
-                                         : 1.0f;
-              _rec_start_countdown =
-                  (long long)(_p_val * 60.0f * frames_per_sec);
-            }
-            set_param(SCHED);
-            redraw();
-          } else {
-            fprintf(
-                stderr,
-                "Error: You cannot schedule a new recording while Recording\n");
-          }
+          set_sched(_p_val);
           break;
         case TIMER:
-          if (_p_val >= 0.0f &&
-              !(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-                _is_scheduled_csv_acc)) {
-            _rec_duration = _p_val;
-
-            float frames_per_sec = (_ipmod * INP_LEN > 0)
-                                       ? ((float)_fsamp / (_ipmod * INP_LEN))
-                                       : 1.0f;
-            _rec_samples_remaining =
-                (long long)(_p_val * 60.0f * frames_per_sec);
-
-            set_param(TIMER);
-            redraw();
-          } else {
-            fprintf(
-                stderr,
-                "Error: You cannot update duration settings while Recording\n");
-          }
+          set_rec_dt(_p_val);
           break;
         }
       }
@@ -1064,6 +972,26 @@ void Mainwin::set_bw(float bw) {
   alloc_fft(_spect);
 }
 
+void Mainwin::set_vamax(float avmax) {
+  if (avmax >= 2 && avmax <= 100000) {
+    if (_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc) {
+      fprintf(stderr, "Error: You cannot update Host frequency "
+                      "settings while Recording\n");
+    } else {
+      _spect->_avmax = avmax;
+      //set_param(AVMAX);
+      //_spect->_avcnt = 0;
+      if (_butt[VIDAV]->stat()) {
+        _spect->_avcnt = 1;
+        _spect->_bits &= ~Spectdata::PEAKH;
+      }
+      redraw();
+    }
+  } else {
+    fprintf(stderr, "Error: Vid averaging should be between 2 ands 100000\n");
+  }
+}
+
 void Mainwin::set_f0(float f) {
   if (f > _f1 - _fm)
     f = _f1 - _fm;
@@ -1127,6 +1055,71 @@ void Mainwin::set_fs(float f) {
   _spect->_f1 = _f1;
   _ngx = 0;
   redraw();
+}
+
+void Mainwin::set_host_f(float host_freq) {
+  if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    _host_freq = host_freq;
+    if (_is_lsb_view) {
+      _f0 = 0.0f;
+      set_f1(_host_freq);
+      //set_param(HOSTF);
+    }
+    redraw();
+  } else {
+    fprintf(stderr, "Error: You cannot update Host frequency settings "
+                    "while Recording\n");
+  }
+}
+
+void Mainwin::set_rec_dec(float rec_dec) {
+  if (rec_dec >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    _decimation_factor = (int)rec_dec;
+    //set_param(REC_DEC);
+    redraw();
+  } else {
+    fprintf(stderr, "Error: You cannot update decimation settings "
+                    "while Recording\n");
+  }
+}
+
+void Mainwin::set_cutoff(float cutoff) {
+  if (cutoff >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    _cutoff_freq = cutoff;
+    //set_param(CUTOFF);
+    redraw();
+  } else {
+    fprintf(stderr, "Error: You cannot update cutoff frequency "
+                    "settings while Recording\n");
+  }
+}
+
+void Mainwin::set_sched(float sched) {
+  if (sched >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (sched == 0.0f) {
+      _rec_date_start = sched;
+    } else {
+      _rec_date_start = time(nullptr) + (time_t)(sched * 60);
+      float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+      _rec_start_countdown = (long long)(sched * 60.0f * frames_per_sec);
+    }
+    set_param(SCHED); // Updating param to "_rec_date_start" since now _p_val is outdated
+    redraw();
+  } else {
+    fprintf(stderr, "Error: You cannot schedule a new recording while Recording\n");
+  }
+}
+
+void Mainwin::set_rec_dt(float rec_dt) {
+  if (rec_dt >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    _rec_duration = rec_dt;
+    float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
+    _rec_samples_remaining = (long long)(rec_dt * 60.0f * frames_per_sec);
+    //set_param(TIMER);
+    redraw();
+  } else {
+    fprintf(stderr, "Error: You cannot update duration settings while Recording\n");
+  }
 }
 
 void Mainwin::set_a1(float a) {
@@ -1236,11 +1229,11 @@ void Mainwin::show_param(void) {
   case SI1_FREQ:
   case SI2_FREQ:
     if (_p_val < 1e3)
-      sprintf(s, "%5.3f", _p_val);
+      sprintf(s, "%5.3f Hz", _p_val);
     else if (_p_val < 1e6)
-      sprintf(s, "%5.3fk", _p_val / 1e3);
+      sprintf(s, "%5.3fkHz", _p_val / 1e3);
     else
-      sprintf(s, "%5.3fM", _p_val / 1e6);
+      sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
 
   case AMAX:
@@ -1256,31 +1249,43 @@ void Mainwin::show_param(void) {
 
   case DT_SCHED:
     if (_p_val > 0)
-      sprintf(s, "%8.2f m", _p_val);
+      sprintf(s, "%8.2f mins", _p_val);
     else
-      sprintf(s, "NOW");
+      sprintf(s, "0 min (NOW)");
     break;
   case DT_AVG:
-    sprintf(s, "%8.2f s", _p_val);
+    sprintf(s, "%8.2f secs", _p_val);
     break;
   case DT_AMNT:
-    sprintf(s, "%8.0f", _p_val);
+    sprintf(s, "%8.0f samps", _p_val);
     break;
 
   case HOSTF:
-    sprintf(s, "%8.2f", _p_val);
+    if (_p_val < 1e3)
+      sprintf(s, "%5.3f Hz", _p_val);
+    else if (_p_val < 1e6)
+      sprintf(s, "%5.3fkHz", _p_val / 1e3);
+    else
+      sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
+
   case REC_DEC:
     sprintf(s, "%8.0f", _p_val);
     break;
   case CUTOFF:
-    sprintf(s, "%8.2f", _p_val);
+    if (_p_val < 1e3)
+      sprintf(s, "%5.3f Hz", _p_val);
+    else if (_p_val < 1e6)
+      sprintf(s, "%5.3fkHz", _p_val / 1e3);
+    else
+      sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
+
   case SCHED:
     if (_p_val > 0) {
       sprintf(s, "%8.2f mins", ((time_t)_p_val - time(nullptr)) / 60.0);
     } else {
-      sprintf(s, "%8.2f", _p_val);
+      sprintf(s, "0 min (NOW)");
     }
     break;
   case TIMER:
