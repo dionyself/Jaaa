@@ -441,8 +441,6 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
 
     case BANDW:
     case AVMAX:
-    //    set_param (AVMAX);
-    //    break;
     case MPEAK:
     case MNSE:
     case FMIN:
@@ -948,7 +946,6 @@ void Mainwin::mod_param(bool inc) {
     break;
   case HOSTF:
     set_host_f(_host_freq + df);
-    _p_val = _host_freq;
     break;
   case FCENT:
     set_fc(_fc + df);
@@ -968,12 +965,9 @@ void Mainwin::mod_param(bool inc) {
     } else {
       set_vamax(_spect->_avmax - (_spect->_avmax + 10)  / 10);
     }
-    
-    fprintf(stderr, "Executed avmax inc\n");
     break;
   case CUTOFF:
     set_cutoff(_cutoff_freq + df);
-    _p_val = _cutoff_freq;
     break;
   case REC_DEC:
     if (inc) {
@@ -981,7 +975,6 @@ void Mainwin::mod_param(bool inc) {
     } else {
       set_rec_dec(_decimation_factor - (_decimation_factor + 10) / 10);
     }
-    _p_val = _decimation_factor;
     break;
   case SCHED:
     if (inc) {
@@ -999,7 +992,6 @@ void Mainwin::mod_param(bool inc) {
     break;
   }
   show_param();
-  fprintf(stderr, "Executed show_param inc\n");
 }
 
 void Mainwin::show_param(void) {
@@ -1021,22 +1013,18 @@ void Mainwin::show_param(void) {
     else
       sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
-
   case AMAX:
   case ASPAN:
     sprintf(s, "%1.0f dB", _p_val);
     break;
-
   case NSE_LEV:
   case SI1_LEV:
   case SI2_LEV:
     sprintf(s, "%2.1f dB", _p_val);
     break;
-
   case AVMAX:
     sprintf(s, "%d samps", _spect->_avmax);
     break;
-
   case DT_SCHED:
     if (_p_val > 0)
       sprintf(s, "%8.2f mins", _p_val);
@@ -1049,9 +1037,7 @@ void Mainwin::show_param(void) {
   case DT_AMNT:
     sprintf(s, "%8.0f samps", _p_val);
     break;
-
-  case HOSTF:
-    
+  case HOSTF:    
     if (_p_val < 1e3)
       sprintf(s, "%5.3f Hz", _p_val);
     else if (_p_val < 1e6)
@@ -1059,19 +1045,8 @@ void Mainwin::show_param(void) {
     else
       sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
-    
-    /*
-    if (_host_freq < 1e3)
-      sprintf(s, "%5.3f Hz", _host_freq);
-    else if (_host_freq < 1e6)
-      sprintf(s, "%5.3fkHz", _host_freq / 1e3);
-    else
-      sprintf(s, "%5.3fMHz", _host_freq / 1e6);
-    */
-    break;
-
   case REC_DEC:
-    sprintf(s, "%8.0f", _p_val);
+    sprintf(s, "%8.0f", _p_val); // float ?? decimation shouldbe int
     break;
   case CUTOFF:
     if (_p_val < 1e3)
@@ -1081,7 +1056,6 @@ void Mainwin::show_param(void) {
     else
       sprintf(s, "%5.3fMHz", _p_val / 1e6);
     break;
-
   case SCHED:
     if (_p_val > 0) {
       sprintf(s, "%8.2f mins", (_rec_date_start - time(nullptr)) / 60.0);
@@ -1655,7 +1629,7 @@ size_t Mainwin::predict_memory_requirements(int capture_amount) {
   _max_pass_count = capture_amount;
   size_t exact_size = static_cast<size_t>(_max_pass_count) * useful_len;
 
-  // Margen de tolerancia del 25%
+  // Tolerance 25%
   size_t updated_size = exact_size + (exact_size / 4);
   return updated_size;
 }
@@ -1674,11 +1648,11 @@ void Mainwin::start_acumulator(time_t start_time, float averaging_time,
   if (start_time > now) {
     _is_scheduled_csv_acc = true;
     _is_accumulating_csv = false;
-    _butt[DT_START_STOP]->set_stat(1); // Estado programado
+    _butt[DT_START_STOP]->set_stat(1);
   } else {
     _is_scheduled_csv_acc = false;
     _is_accumulating_csv = true;
-    _butt[DT_START_STOP]->set_stat(2); // Estado activo
+    _butt[DT_START_STOP]->set_stat(2);
   }
 }
 

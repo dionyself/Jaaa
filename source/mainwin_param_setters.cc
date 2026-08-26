@@ -38,8 +38,7 @@ void Mainwin::set_vamax(float avmax) {
                       "settings while Recording\n");
     } else {
       _spect->_avmax = avmax;
-      //set_param(AVMAX);
-      //_spect->_avcnt = 0;
+      //_p_val = _spect->_avmax; // show_param(AVMAX) reads _spect->_avmax directly (We may not need to update _p_val)
       if (_butt[VIDAV]->stat()) {
         _spect->_avcnt = 1;
         _spect->_bits &= ~Spectdata::PEAKH;
@@ -119,12 +118,11 @@ void Mainwin::set_fs(float f) {
 void Mainwin::set_host_f(float host_freq) {
   if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
     _host_freq = host_freq;
-    //_p_val = _host_freq;
     if (_is_lsb_view) {
       _f0 = 0.0f;
       set_f1(_host_freq);
-      //set_param(HOSTF);
     }
+    _p_val = _host_freq;
     redraw();
   } else {
     fprintf(stderr, "Error: You cannot update Host frequency settings "
@@ -135,7 +133,7 @@ void Mainwin::set_host_f(float host_freq) {
 void Mainwin::set_rec_dec(float rec_dec) {
   if (rec_dec >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
     _decimation_factor = (int)rec_dec;
-    //set_param(REC_DEC);
+    _p_val = rec_dec;
     redraw();
   } else {
     fprintf(stderr, "Error: You cannot update decimation settings "
@@ -146,7 +144,7 @@ void Mainwin::set_rec_dec(float rec_dec) {
 void Mainwin::set_cutoff(float cutoff) {
   if (cutoff >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
     _cutoff_freq = cutoff;
-    //set_param(CUTOFF);
+    _p_val = _cutoff_freq;
     redraw();
   } else {
     fprintf(stderr, "Error: You cannot update cutoff frequency "
@@ -164,7 +162,7 @@ void Mainwin::set_sched(float sched) {
       _rec_date_start = time(nullptr) + (time_t)(sched * 60);
       float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
       _rec_start_countdown = (long long)(sched * 60.0f * frames_per_sec);
-      set_param(SCHED); // Updating param to "_rec_date_start" since now _p_val is outdated
+      _p_val = (_rec_date_start - time(nullptr)) / 60;
     }
     redraw();
   } else {
@@ -177,7 +175,7 @@ void Mainwin::set_rec_dt(float rec_dt) {
     _rec_duration = rec_dt;
     float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
     _rec_samples_remaining = (long long)(rec_dt * 60.0f * frames_per_sec);
-    set_param(TIMER);
+    _p_val = _rec_duration;
     redraw();
   } else {
     fprintf(stderr, "Error: You cannot update duration settings while Recording\n");
