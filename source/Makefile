@@ -33,7 +33,7 @@ LDLIBS += -lzita-alsa-pcmi -lclthreads -lclxclient -lasound -lpthread \
 	-lfftw3f -ljack -lXft -lX11 -lrt
 
 
-JAAA_O = jaaa.o styles.o mainwin.o audio.o rngen.o
+JAAA_O = jaaa.o styles.o mainwin.o audio.o rngen.o mainwin_param_setters.o
 jaaa:	$(JAAA_O)
 	$(CXX) $(LDFLAGS) -o $@ $(JAAA_O) $(LDLIBS)
 $(JAAA_O):
