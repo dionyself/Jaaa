@@ -34,7 +34,7 @@ void Mainwin::set_bw(float bw) {
 void Mainwin::set_vamax(float avmax) {
   if (avmax >= 2 && avmax <= 100000) {
     if (_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc) {
-      fprintf(stderr, "Error: You cannot update Host frequency "
+      fprintf(stderr, "Error: You cannot update wave averanging "
                       "settings while Recording\n");
     } else {
       _spect->_avmax = avmax;
@@ -117,6 +117,10 @@ void Mainwin::set_fs(float f) {
 
 void Mainwin::set_host_f(float host_freq) {
   if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (host_freq > 24000) {
+      host_freq = 24000;
+      fprintf(stderr, "Error: Maximun host frequency is 24 kHz\n");
+    }
     _host_freq = host_freq;
     if (_is_lsb_view) {
       _f0 = 0.0f;
@@ -132,6 +136,10 @@ void Mainwin::set_host_f(float host_freq) {
 
 void Mainwin::set_rec_dec(float rec_dec) {
   if (rec_dec >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (rec_dec > 24000) {
+      rec_dec = 24000;
+      fprintf(stderr, "Error: Maximun decimation factor is 24000\n");
+    }
     _decimation_factor = (int)rec_dec;
     _p_val = rec_dec;
     redraw();
@@ -143,6 +151,10 @@ void Mainwin::set_rec_dec(float rec_dec) {
 
 void Mainwin::set_cutoff(float cutoff) {
   if (cutoff >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (cutoff > 24000) {
+      cutoff = 24000;
+      fprintf(stderr, "Error: Maximun cutoff frequency is 24 kHz\n");
+    }
     _cutoff_freq = cutoff;
     _p_val = _cutoff_freq;
     redraw();
@@ -154,6 +166,10 @@ void Mainwin::set_cutoff(float cutoff) {
 
 void Mainwin::set_sched(float sched) {
   if (sched >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (sched > 528000) {
+      sched = 528000;
+      fprintf(stderr, "Error: Maximun programable time is 528000 mins\n");
+    }
     _p_val = sched;
     if (sched == 0.0f) {
       _rec_date_start = time(nullptr);
@@ -172,6 +188,10 @@ void Mainwin::set_sched(float sched) {
 
 void Mainwin::set_rec_dt(float rec_dt) {
   if (rec_dt >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+    if (rec_dt > 528000) {
+      rec_dt = 528000;
+      fprintf(stderr, "Error: Maximun duration time is 528000 mins\n");
+    }
     _rec_duration = rec_dt;
     float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
     _rec_samples_remaining = (long long)(rec_dt * 60.0f * frames_per_sec);
