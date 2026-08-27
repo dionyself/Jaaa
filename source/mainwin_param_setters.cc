@@ -115,6 +115,33 @@ void Mainwin::set_fs(float f) {
   redraw();
 }
 
+void Mainwin::set_dt_sched(float dt_sched) {
+  if (dt_sched < 0.0f) {
+    dt_sched = 0.0f;
+    fprintf(stderr, "Error: You cannot set negative time\n");
+  }
+  _p_val = dt_sched;
+  _dt_sched = (int)_p_val;
+}
+
+void Mainwin::set_dt_avg(float dt_avg){
+  if (dt_avg < 1.0f) {
+    dt_avg = 50.0f;
+    fprintf(stderr, "Error: Averaging time shouldbe > 0\n");
+  }
+  _p_val = dt_avg;
+  _dt_avg = (int)_p_val;
+}
+
+void Mainwin::set_dt_amnt(float dt_amnt){
+  if (dt_amnt < 1.0f) {
+    dt_amnt = 10.0f;
+    fprintf(stderr, "Error: Sampling time shouldbe > 0\n");
+  }
+  _p_val = dt_amnt;
+  _dt_amnt = (int)_p_val;
+}
+
 void Mainwin::set_host_f(float host_freq) {
   if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
     if (host_freq > 24000) {

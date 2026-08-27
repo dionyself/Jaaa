@@ -395,13 +395,13 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
           set_f_si2(_p_val);
           break;
         case DT_SCHED:
-          _dt_sched = _p_val;
+          set_dt_sched(_p_val);
           break;
         case DT_AVG:
-          _dt_avg = _p_val;
+          set_dt_avg(_p_val);
           break;
         case DT_AMNT:
-          _dt_amnt = (int)_p_val;
+          set_dt_amnt(_p_val);
           break;
         case HOSTF:
           set_host_f(_p_val);
@@ -889,10 +889,10 @@ void Mainwin::set_param(int i) {
     _p_val = _f_si2;
     break;
   case DT_SCHED:
-    _p_val = _dt_sched;
+    _p_val = (float)_dt_sched;
     break;
   case DT_AVG:
-    _p_val = _dt_avg;
+    _p_val = (float)_dt_avg;
     break;
   case DT_AMNT:
     _p_val = (float)_dt_amnt;
@@ -943,6 +943,27 @@ void Mainwin::mod_param(bool inc) {
     break;
   case FMAX:
     set_f1(_f1 + df);
+    break;
+  case DT_SCHED:
+    if (inc) {
+      set_dt_sched(_dt_sched + (_dt_sched + 10) / 10);
+    } else {
+      set_dt_sched(_dt_sched - (_dt_sched + 10)  / 10);
+    }
+    break;
+  case DT_AVG:
+    if (inc) {
+      set_dt_avg(_dt_avg + (_dt_avg + 10) / 10);
+    } else {
+      set_dt_avg(_dt_avg - (_dt_avg + 10) / 10);
+    }
+    break;
+  case DT_AMNT:
+    if (inc) {
+      set_dt_amnt(_dt_amnt + (_dt_amnt + 10) / 10);
+    } else {
+      set_dt_amnt(_dt_amnt - (_dt_amnt + 10)  / 10);
+    }
     break;
   case HOSTF:
     set_host_f(_host_freq + df);
@@ -1032,7 +1053,7 @@ void Mainwin::show_param(void) {
       sprintf(s, "0 min (NOW)");
     break;
   case DT_AVG:
-    sprintf(s, "%8.2f secs", _p_val);
+    sprintf(s, "%8.0f secs", _p_val);
     break;
   case DT_AMNT:
     sprintf(s, "%8.0f samps", _p_val);
@@ -2052,24 +2073,18 @@ void Mainwin::toggle_recording(void) {
       if (_rec_duration > 0.99f) {
         _rec_date_end = now + (time_t)(_rec_duration * 60);
         fprintf(stderr, "Normal Recording ...\n");
-      } else if (0 < _rec_duration && _rec_duration <= 0.99f) {
+      } else {
         _is_recording = false;
         _rec_date_end = 0;
         fprintf(stderr, "Error: Invalid Timer/Duration, Recordind duration "
                         "shouldbe at least 1 minute\n");
         return;
-      } else {
-        _rec_date_end = 0;
-        fprintf(stderr, "Duration = 0, Will record forever ...\n");
       }
     } else if (_rec_date_start > now + (time_t)(0.99f * 60) &&
                (_rec_duration == 0 || _rec_duration > 0.99f) &&
                _rec_date_end == 0) {
       _is_recording = false;
-      if (_rec_duration == 0) {
-        _rec_date_end = 0;
-        fprintf(stderr, "Scheduled; Duration = 0, Will record forever ...\n");
-      } else if (0 < _rec_duration && _rec_duration <= 0.99f) {
+      if (_rec_duration <= 0.99f) {
         _rec_date_end = 0;
         fprintf(stderr, "Error: Invalid Timer/Duration, Recordind duration "
                         "shouldbe at least 1 minute\n");
@@ -2077,7 +2092,6 @@ void Mainwin::toggle_recording(void) {
       } else {
         _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
       }
-
       _rec_scheduled = true;
       _butt[REC_STOP]->set_stat(1);
       fprintf(stderr, "Record scheduled, countdown:%lld \n",

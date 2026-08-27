@@ -212,6 +212,9 @@ private:
   void mod_param(bool inc);
   void set_bw(float);
   void set_vamax(float);
+  void set_dt_sched(float);
+  void set_dt_avg(float);
+  void set_dt_amnt(float);
   void set_host_f(float);
   void set_rec_dec(float);
   void set_cutoff(float);
