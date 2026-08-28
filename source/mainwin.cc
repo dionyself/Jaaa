@@ -802,7 +802,7 @@ void Mainwin::set_fsamp(unsigned int fsamp, bool symm) {
   _spect->_f0 = _f0 = _fmin;
   _spect->_f1 = _f1 = _fmax;
   _fc = 0.5 * (_fmin + _fmax);
-  //_fm = 0.001 * fsamp; // 48 Hz resolution
+  //_fm = 0.001 * fsamp; // 48 Hz resolution if samplerate is 48000
   //_fm = 0.0001 * fsamp; // 4.8 Hz resolution
   //_fm = 0.00001 * fsamp; // 0.48 Hz resolution
   _fm = 1.0f;

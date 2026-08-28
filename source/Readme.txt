@@ -1,3 +1,13 @@
+# Using default frequency (24 kHz)
+python script.py datos.csv
+
+# using 48 kHz
+python script.py datos.csv -f 48
+
+# Using 48 kHz for sample #12
+python script.py datos.csv --freq 48 -s 12
+
+
 #csv_viewer dependencies
 pip install pandas matplotlib numpy
 

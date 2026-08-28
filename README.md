@@ -200,6 +200,10 @@ Mouse wheel Increment/decrement current parameter
 - Raw: Power values (use dB = 10 * log10(value + 1e-30))
 - dB: Decibel-scaled values
 - Naming: spect_demod_YYYYMMDD_HHMMSS__YYYYMMDD_HHMMSS__N_raw/dB.csv
+- Visualising a \*db.csvfile:
+- `csv_viewer.py file.dB -f 24 -s 2` 
+- # see the second sample (s) and plot until 24kHz (f) 
+- # 48kHz supported
 
 ### WAV Recording Files
 
