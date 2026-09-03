@@ -1,6 +1,9 @@
 ## JAAA: Geophysical Edition
 
-This is a modified version of JACK ALSA AUDIO ANALYZER (JAAA by Fons Adriaensen), enhanced with specialized features for geophysical research, including support for ultra-low frequency (ULF) analysis and integration with SimpleQuakeSensor hardware.  [SimpleQuakeSensor Hardware](https://github.com/dionyself/SimpleQuakeSensor)  
+This is a modified version of JACK ALSA AUDIO ANALYZER (JAAA by Fons Adriaensen), 
+enhanced with specialized features for geophysical research, 
+including support for ultra-low frequency (ULF) analysis and integration with SimpleQuakeSensor hardware.  
+[SimpleQuakeSensor Hardware](https://github.com/dionyself/SimpleQuakeSensor)  
 
 ## Features
 
@@ -87,7 +90,6 @@ Select one of the 8 inputs.
 - Range: Full display range
 - Vertical mouse gestures for scrolling and zooming
  
-
 ### Analyser Settings
 
 - Bandw: FFT length control (affects frequency resolution)
@@ -150,6 +152,14 @@ the true peak value regardless of display or analyser resolution.
 
 When 'Noise' is selected, clicking inside the display will set a noise marker.
 The noise density (energy per Hz) is calculated and displayed.
+
+## Required hardware
+You need to connect our spetialized sensor [SimpleQuakeSensor Hardware](https://github.com/dionyself/SimpleQuakeSensor)   
+you can buy it online <link> or buid it by yourself, here we give you the basic schematic:  
+![brief schematic](https://github.com/dionyself/Jaaa/blob/master/images/simple_sensor.jpg)
+
+Note: You will need a really BIG loop antenna, you can do undergrounf or undersea tests,  
+feel free to experiment.
 
 ## Quick Start
 
@@ -233,6 +243,9 @@ Mouse wheel Increment/decrement current parameter
 - Scheduler uses real-time clock (supports future start)
 - Countdown display when recording is scheduled
 - Automatic stop after configured duration
+
+## GUI preview
+![brief schematic](https://github.com/dionyself/Jaaa/blob/master/images/jaaa_preview.jpg)
 
 ### Requirements
 
