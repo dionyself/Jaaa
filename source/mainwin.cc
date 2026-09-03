@@ -910,7 +910,7 @@ void Mainwin::set_param(int i) {
     _p_val = _cutoff_freq;
     break;
   case SCHED:
-    _p_val = (_rec_date_start - time(nullptr)) / 60;
+    _p_val = (_rec_date_start - time(nullptr)) / 60.0f;
     break;
   case TIMER:
     _p_val = _rec_duration;
@@ -1082,7 +1082,7 @@ void Mainwin::show_param(void) {
     break;
   case SCHED:
     if (_p_val > 0) {
-      sprintf(s, "%8.2f mins", (_rec_date_start - time(nullptr)) / 60.0);
+      sprintf(s, "%8.2f mins", (_rec_date_start - time(nullptr)) / 60.0f);
     } else {
       sprintf(s, "0 min (NOW)");
     }

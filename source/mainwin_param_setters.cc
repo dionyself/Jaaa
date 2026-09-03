@@ -211,7 +211,7 @@ void Mainwin::set_sched(float sched) {
       _rec_date_start = time(nullptr) + (time_t)(sched * 60);
       float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
       _rec_start_countdown = (long long)(sched * 60.0f * frames_per_sec);
-      _p_val = (_rec_date_start - time(nullptr)) / 60;
+      _p_val = (_rec_date_start - time(nullptr)) / 60.0f;
     }
     redraw();
   } else {
