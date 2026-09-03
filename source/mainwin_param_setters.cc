@@ -144,9 +144,15 @@ void Mainwin::set_dt_amnt(float dt_amnt){
 
 void Mainwin::set_host_f(float host_freq) {
   if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
-    if (host_freq > 24000) {
-      host_freq = 24000;
-      fprintf(stderr, "Error: Maximun host frequency is 24 kHz\n");
+    _alias_host_freq = 0.0f;
+    if (host_freq > _fmax) {
+      fprintf(stderr, "Error: Maximun host frequency is %2.1lf kHz\n", _fmax);
+      if (host_freq < _fmax * 2) {
+        _alias_host_freq = (_fmax * 2) - host_freq;
+        fprintf(stderr, "Error: Out of frequency you may suffer aliasing %2.2lf kHz\n", _alias_host_freq);
+      } else {
+        host_freq = _fmax;
+      } 
     }
     _host_freq = host_freq;
     if (_is_lsb_view) {
@@ -163,9 +169,9 @@ void Mainwin::set_host_f(float host_freq) {
 
 void Mainwin::set_rec_dec(float rec_dec) {
   if (rec_dec >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
-    if (rec_dec > 24000) {
-      rec_dec = 24000;
-      fprintf(stderr, "Error: Maximun decimation factor is 24000\n");
+    if (rec_dec > _fmax) {
+      rec_dec = _fmax;
+      fprintf(stderr, "Error: Maximun decimation factor is %5.1lf\n", _fmax);
     }
     _decimation_factor = (int)rec_dec;
     _p_val = rec_dec;
@@ -178,9 +184,9 @@ void Mainwin::set_rec_dec(float rec_dec) {
 
 void Mainwin::set_cutoff(float cutoff) {
   if (cutoff >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
-    if (cutoff > 24000) {
-      cutoff = 24000;
-      fprintf(stderr, "Error: Maximun cutoff frequency is 24 kHz\n");
+    if (cutoff > _fmax) {
+      cutoff = _fmax;
+      fprintf(stderr, "Error: Maximun cutoff frequency is %2.1lf kHz\n", _fmax);
     }
     _cutoff_freq = cutoff;
     _p_val = _cutoff_freq;

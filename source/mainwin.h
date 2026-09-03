@@ -299,6 +299,7 @@ private:
   const static char *_notes[12];
 
   float _host_freq;
+  float _alias_host_freq;
   float _cutoff_freq;
   bool _is_lsb_view;
   int _decimation_factor;

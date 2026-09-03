@@ -42,7 +42,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
     : X_window(parent, XPOS, YPOS, XDEF, YDEF, Colors.main_bg), _xs(XDEF),
       _ys(YDEF), _running(1), _audio(audio), _input(-1), _drag(0), _p_ind(-1),
       _ngx(0), _ngy(0), _fftplan(0), _fftlen(64),
-      _host_freq(16384.0f), // (32.768 Khz / 2)
+      _host_freq(32768.0f), // (32.768 Khz or 15.232 kHz (48 ksamps alises))
       _is_lsb_view(false)
 
 {
@@ -76,6 +76,8 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _rec_start_countdown = 0;
   _rec_samples_remaining = 0;
   _csv_start_countdown = 0;
+
+  _alias_host_freq = 0;
 
   // Configure X11 protocols (Windows closing and focus)
   _atoms[0] = XInternAtom(dpy(), "WM_DELETE_WINDOW", True);
@@ -821,6 +823,7 @@ void Mainwin::set_fsamp(unsigned int fsamp, bool symm) {
   _ngy = 0;
   x_map();
   XFlush(dpy());
+  _alias_host_freq = _host_freq > _fmax ? (_fsamp - _host_freq) :0;
 }
 
 void Mainwin::set_input(int i) {
@@ -1374,7 +1377,7 @@ void Mainwin::print_note(char *s, float f) {
 }
 
 void Mainwin::plot_annot(Spectdata *Z) {
-  char s[64];
+  char s[128];
   float v1, v2;
   int k;
 
@@ -1384,8 +1387,8 @@ void Mainwin::plot_annot(Spectdata *Z) {
   D.setfont(XftFonts.labels);
   D.setfunc(GXcopy);
 
-  sprintf(s, "BW = %4.2lf Hz = %5.2lf dBHz, VA = %d, Ptot = %5.2lf", Z->_bw,
-          10 * log10(Z->_bw), Z->_avcnt, 10 * log10(_ptot));
+  sprintf(s, "BW = %4.2lf Hz = %5.2lf dBHz, VA = %d, Ptot = %5.2lf CutoffF = %5.2lf Hz HostF = %5.2lf Hz AliasingF = %4.2lf Hz", Z->_bw,
+          10 * log10(Z->_bw), Z->_avcnt, 10 * log10(_ptot), _cutoff_freq, _host_freq, _alias_host_freq);
   D.move(10, 15);
   D.drawstring(s, -1);
 
@@ -1767,12 +1770,12 @@ void Mainwin::export_to_csv(const char *filename_override) {
     tm_info = localtime(&_csv_capture_start_time);
     char date_str_start[64];
     strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
-    snprintf(filename, sizeof(filename), "spect_demod_%s__%s__%d_raw.csv",
-             date_str_start, date_str_end, _current_pass_count);
+    snprintf(filename, sizeof(filename), "./geophysical_data/csv/spect_demod_%s__%s__%d__%d_raw.csv",
+             date_str_start, date_str_end, _spect->_avcnt, _current_pass_count);
     fprintf(stderr, "Raw Values included in CSV file, to convert values to dB "
                     "use: 'dB = 10 * log10f (Value + 1e-30f);\n'");
-    snprintf(filename2, sizeof(filename2), "spect_demod_%s__%s__%d_dB.csv",
-             date_str_start, date_str_end, _current_pass_count);
+    snprintf(filename2, sizeof(filename2), "./geophysical_data/csv/spect_demod_%s__%s__%d__%d_dB.csv",
+             date_str_start, date_str_end, _spect->_avcnt, _current_pass_count);
   }
 
   std::ofstream file(filename, std::ios::out);
@@ -2049,7 +2052,7 @@ void Mainwin::toggle_recording(void) {
     strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
     tm_info = localtime(&now);
     strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
-    sprintf(filename, "%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
+    sprintf(filename, "./geophysical_data/wav/%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
             date_str_end, _decimation_factor);
     strncpy(_rec_filename, filename, 126);
     _rec_filename[127] = '\0';
@@ -2112,10 +2115,10 @@ void Mainwin::toggle_recording(void) {
     tm_info = localtime(&_rec_date_end);
     strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
     if (_rec_date_end == 0) {
-      sprintf(filename, "%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
+      sprintf(filename, "./geophysical_data/wav/%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
               _decimation_factor);
     } else {
-      sprintf(filename, "%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
+      sprintf(filename, "./geophysical_data/wav/%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
               date_str_end, _decimation_factor);
     }
     strncpy(_rec_filename, filename, 126);

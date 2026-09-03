@@ -39,9 +39,9 @@ Audio::Audio(ITC_ctrl *cmain, const char *name)
   _rec_action = 0;
   _rec_decimation_factor = 256;
   _rec_fsamp = 0;
-  _rec_host_freq = 16384.0; // (32.768 Khz / 2)
+  _rec_host_freq = 32768.0; // (or 32.768 Khz / 2)
   _rec_cutoff_freq = 6000.0;
-  _host_freq = 16384.0; // (32.768 Khz / 2)
+  _host_freq = 32768.0; // (or 32.768 Khz / 2)
 }
 
 Audio::~Audio(void) {
