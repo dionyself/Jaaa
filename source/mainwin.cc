@@ -199,6 +199,10 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
   y += Bst1.size.y + 15;
 
+  _butt[DUAL_REC] =
+      new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, DUAL_REC);
+  y += Bst1.size.y + 15;
+
   // Text input
   _txt1 = new X_textip(this, this, &Tst1, x, y, RMAR - 6, 18, 16);
   _txt1->x_set_win_gravity(NorthEastGravity);
@@ -215,7 +219,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   Bst0.size.x = 17;
   Bst0.size.y = 17;
-  y += 25;
+  y += 30;
   _butt[OP1] = new X_tbutton(this, this, &Bst0, x, y, "1", 0, OP1);
   _butt[OP2] = new X_tbutton(this, this, &Bst0, x + 19, y, "2", 0, OP2);
   _butt[OP3] = new X_tbutton(this, this, &Bst0, x + 38, y, "3", 0, OP3);
@@ -544,6 +548,9 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
     case REC_STOP:
       toggle_recording();
       break;
+    case DUAL_REC:
+      toggle_dual_recording();
+      break;
     case DEM_UDT:
       if (!(_is_recording || _rec_scheduled || _is_accumulating_csv ||
             _is_scheduled_csv_acc)) {
@@ -558,7 +565,11 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       _is_lsb_view = !_is_lsb_view;
       if (_is_lsb_view) {
         _f0 = 0.0f;
-        set_f1(_host_freq);
+        if (_alias_host_freq > 0){
+          set_f1(_alias_host_freq);
+        } else{
+          set_f1(_host_freq);
+        }
         set_bw(5.859f);
         set_param(BANDW);
         _butt[DMOD]->set_stat(2);
@@ -659,7 +670,7 @@ void Mainwin::redraw(void) {
 
   // Title
   D.move(_xs - RMAR + 2, 10);
-  D.drawstring("Input", -1);
+  D.drawstring("    ---Input---", -1);
   D.move(_xs - RMAR + 2, 60);
   D.drawstring("Analyser", -1);
   D.move(_xs - RMAR + 2, 160);
@@ -677,14 +688,18 @@ void Mainwin::redraw(void) {
   D.move(_xs - RMAR + 2, 590);
   D.drawstring("WAV Recorder", -1);
   D.move(_xs - RMAR + 2, 656);
+  D.drawstring("Sync Rec", -1);
+  D.move(_xs - RMAR + 2, 690);
   D.drawstring("Curr value", -1);
-  D.move(_xs - RMAR + 2, 703);
-  D.drawstring("Output", -1);
-  D.move(_xs - RMAR + 2, 760);
+  D.move(_xs - RMAR + 2, 725);
+  D.drawstring("Dec/Inc", -1);
+  D.move(_xs - RMAR + 2, 740);
+  D.drawstring("   ---Output---", -1);
+  D.move(_xs - RMAR + 2, 798);
   D.drawstring("Noise", -1);
-  D.move(_xs - RMAR + 2, 800);
+  D.move(_xs - RMAR + 2, 838);
   D.drawstring("Sine1", -1);
-  D.move(_xs - RMAR + 2, 855);
+  D.move(_xs - RMAR + 2, 893);
   D.drawstring("Sine2", -1);
 
   plot_fscale();
@@ -1723,11 +1738,6 @@ void Mainwin::accumulate_csv_data(void) {
   }
 
   if (_current_pass_count >= _max_pass_count) {
-
-    // Stop averaging
-    _butt[VIDAV]->set_stat(0);
-    _spect->_avcnt = 0;
-
     stop_and_save_csv();
     _inter_samples_count = 0;
   }
@@ -1743,9 +1753,11 @@ void Mainwin::stop_and_save_csv(void) {
   _is_scheduled_csv_acc = false;
   _inter_samples_count = 0;
 
-  export_to_csv();
-
+  // Stop averaging
+  _butt[VIDAV]->set_stat(0);
+  _spect->_avcnt = 0;
   _butt[DT_START_STOP]->set_stat(0);
+  export_to_csv();
   fprintf(stderr, "Acumulation end. Passes captured: %d.\n",
           _current_pass_count);
   _current_pass_count = 0;
@@ -1871,8 +1883,9 @@ void Mainwin::calc_spect(Spectdata *S) {
 
   if (_is_lsb_view) { // LSB Mode
 
+    float lsb_host_f = _alias_host_freq > 0.0f ? _alias_host_freq : _host_freq;
     // Calculate inicial frequency, based on the last pixel (LSB only)
-    float f_real_base = _host_freq - (S->_f0 + (S->_npix - 0.5f) * dd);
+    float f_real_base = lsb_host_f - (S->_f0 + (S->_npix - 0.5f) * dd);
 
     j = (int)(ceil(f_real_base / dc));
     if (j < 0)
@@ -1881,7 +1894,7 @@ void Mainwin::calc_spect(Spectdata *S) {
 
     // Reverse iterator
     for (i = S->_npix - 1; i >= 0; i--) {
-      f_real_end = _host_freq - (S->_f0 + (i - 0.5f) * dd);
+      f_real_end = lsb_host_f - (S->_f0 + (i - 0.5f) * dd);
       pp = pm = 0;
       pp2 = pm2 = 0;
 
@@ -2133,6 +2146,14 @@ void Mainwin::toggle_recording(void) {
 
     fprintf(stderr, "Start Record command emited\n");
   }
+}
+
+void Mainwin::toggle_dual_recording(void) {
+
+    if (_is_recording == _is_accumulating_csv) {
+      toggle_recording();
+      toggle_csv_accumulation();
+    }
 }
 
 void Mainwin::update_demulator(void) {

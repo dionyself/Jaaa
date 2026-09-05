@@ -154,6 +154,7 @@ private:
     DT_AMNT,
     DT_START_STOP,
     AVMAX,
+    DUAL_REC,
     NBUTT
   };
 
@@ -250,6 +251,7 @@ private:
   void calc_peak(float *f, float *p, float r);
   void print_note(char *s, float f);
   void toggle_recording(void);
+  void toggle_dual_recording(void);
   void update_demulator(void);
 
   int _xs, _ys;
