@@ -51,6 +51,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   // Rec vars
   _is_recording = false;
+  _is_looping_wav = false;
   _rec_scheduled = false;
   _rec_fname_prefix = "geological_record";
   _rec_date_start = 0;
@@ -62,6 +63,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   // CSV vars
   _is_accumulating_csv = false;
+  _is_looping_csv = false;
   _is_scheduled_csv_acc = false;
   _current_pass_count = 0;
   _max_pass_count = 10;
@@ -158,14 +160,17 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   y += Bst1.size.y + 15;
 
   // Heterodyning
-  _butt[DMOD] = new X_tbutton(this, this, &Bst1, x, y, "LSB View", 0, DMOD);
-  y += Bst1.size.y;
+  Bst1.size.x = RMAR - 55;
+  _butt[DMOD] = new X_tbutton(this, this, &Bst1, x, y, "LSB", 0, DMOD);
+  //y += Bst1.size.y;
   _butt[ULF_MOD] =
-      new X_tbutton(this, this, &Bst1, x, y, "ULF View", 0, ULF_MOD);
-  y += Bst1.size.y;
+      new X_tbutton(this, this, &Bst1, x+25, y, "ULF", 0, ULF_MOD);
+  //y += Bst1.size.y;
   _butt[ELF_MOD] =
-      new X_tbutton(this, this, &Bst1, x, y, "ELF View", 0, ELF_MOD);
+      new X_tbutton(this, this, &Bst1, x+50, y, "ELF", 0, ELF_MOD);
   y += Bst1.size.y + 15;
+
+  Bst1.size.x = RMAR - 6;
 
   // DATA export
   _butt[DT_SCHED] =
@@ -174,6 +179,8 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[DT_AVG] = new X_tbutton(this, this, &Bst1, x, y, "Avg time", 0, DT_AVG);
   y += Bst1.size.y;
   _butt[DT_AMNT] = new X_tbutton(this, this, &Bst1, x, y, "Amount", 0, DT_AMNT);
+  y += Bst1.size.y;
+  _butt[DT_LOOP] = new X_tbutton(this, this, &Bst1, x, y, "Loop", 0, DT_LOOP);
   y += Bst1.size.y;
   _butt[DT_START_STOP] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, DT_START_STOP);
@@ -194,6 +201,8 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[SCHED] = new X_tbutton(this, this, &Bst1, x, y, "Start Time", 0, SCHED);
   y += Bst1.size.y;
   _butt[TIMER] = new X_tbutton(this, this, &Bst1, x, y, "Duration", 0, TIMER);
+  y += Bst1.size.y;
+  _butt[REC_LOOP] = new X_tbutton(this, this, &Bst1, x, y, "----", 0, REC_LOOP);
   y += Bst1.size.y;
   _butt[REC_STOP] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
@@ -528,6 +537,9 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       set_param(i);
       break;
     case DT_START_STOP:
+      if (_is_accumulating_csv || _is_scheduled_csv_acc) {
+        _is_looping_csv = false;
+      }
       toggle_csv_accumulation();
       break;
     case HOSTF:
@@ -545,10 +557,41 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
     case TIMER:
       set_param(TIMER);
       break;
+    case REC_LOOP:
+        if (B->stat()){
+          B->set_stat(0);
+          _is_looping_wav = false;
+        }else{
+          B->set_stat(2);
+          _is_looping_wav = true;
+        }
+      break;
+    case DT_LOOP:
+        if (B->stat()){
+          B->set_stat(0);
+          _is_looping_csv = false;
+        }else{
+          B->set_stat(2);
+          _is_looping_csv = true;
+        }
+      break;
     case REC_STOP:
+      if (_is_recording || _rec_scheduled) {
+        _is_looping_wav = false;
+      }
       toggle_recording();
       break;
     case DUAL_REC:
+      if (_is_recording != _is_accumulating_csv){
+        return;
+      }
+      if (_is_recording || _rec_scheduled || _is_accumulating_csv ||
+            _is_scheduled_csv_acc) {
+        _is_looping_wav = false;
+        _is_looping_csv = false;
+        _butt[DT_LOOP]->set_stat(0);
+        _butt[REC_LOOP]->set_stat(0);
+      }
       toggle_dual_recording();
       break;
     case DEM_UDT:
@@ -680,14 +723,14 @@ void Mainwin::redraw(void) {
   D.move(_xs - RMAR + 2, 310);
   D.drawstring("Amplitude", -1);
   D.move(_xs - RMAR + 2, 358);
-  D.drawstring("Modes", -1);
-  D.move(_xs - RMAR + 2, 425);
+  D.drawstring("View Types", -1);
+  D.move(_xs - RMAR + 2, 390);
   D.drawstring("Export CSV", -1);
-  D.move(_xs - RMAR + 2, 508);
+  D.move(_xs - RMAR + 2, 490);
   D.drawstring("Demulating", -1);
-  D.move(_xs - RMAR + 2, 590);
+  D.move(_xs - RMAR + 2, 575);
   D.drawstring("WAV Recorder", -1);
-  D.move(_xs - RMAR + 2, 656);
+  D.move(_xs - RMAR + 2, 657);
   D.drawstring("Sync Rec", -1);
   D.move(_xs - RMAR + 2, 690);
   D.drawstring("Curr value", -1);
@@ -1520,6 +1563,7 @@ void Mainwin::handle_trig() {
     }
     memcpy(_fftbuf, _ipbuf + k - _fftlen, _fftlen * sizeof(float));
     memcpy(_fftbuf_demod, _ipbuf_demod + k - _fftlen, _fftlen * sizeof(float));
+    // TODO: Process, modify _fftbuf_demod here
     // Execute FFT
     fftwf_execute_dft_r2c(_fftplan, _fftbuf, _trbuf + 4);
     fftwf_execute_dft_r2c(_fftplan_demod, _fftbuf_demod, _trbuf_demod + 4);
@@ -1740,6 +1784,13 @@ void Mainwin::accumulate_csv_data(void) {
   if (_current_pass_count >= _max_pass_count) {
     stop_and_save_csv();
     _inter_samples_count = 0;
+    if (_is_looping_csv){
+      _current_pass_count = 0;
+      time_t start_time = time(nullptr);
+      fprintf(stderr, "restarting accumolator due to looping");
+      start_acumulator(start_time, _dt_avg, _dt_amnt);
+      return;
+    }
   }
 
   _inter_samples_count++;
@@ -1753,10 +1804,12 @@ void Mainwin::stop_and_save_csv(void) {
   _is_scheduled_csv_acc = false;
   _inter_samples_count = 0;
 
-  // Stop averaging
-  _butt[VIDAV]->set_stat(0);
-  _spect->_avcnt = 0;
-  _butt[DT_START_STOP]->set_stat(0);
+  if (!_is_looping_csv){
+    // Stop averaging
+    _butt[VIDAV]->set_stat(0);
+    _spect->_avcnt = 0;
+    _butt[DT_START_STOP]->set_stat(0);
+  }
   export_to_csv();
   fprintf(stderr, "Acumulation end. Passes captured: %d.\n",
           _current_pass_count);
@@ -2053,6 +2106,10 @@ void Mainwin::toggle_recording(void) {
   float frames_per_sec =
       (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
   _rec_samples_remaining = (long long)(_rec_duration * 60.0f * frames_per_sec);
+  
+  fprintf(stderr, "rec samples remaining at start(%lld)***\n", _rec_samples_remaining);
+  fprintf(stderr, "duration at start: %f)\n", _rec_duration);
+
 
   if (_is_recording) {
 
@@ -2079,6 +2136,7 @@ void Mainwin::toggle_recording(void) {
     _rec_date_start = 0;
     _butt[REC_STOP]->set_stat(0);
     fprintf(stderr, "Stopped Recording (event emited)\n");
+    //if (_is_looping_wav){}
     return;
   } else {
     _is_recording = true;
@@ -2106,7 +2164,7 @@ void Mainwin::toggle_recording(void) {
                         "shouldbe at least 1 minute\n");
         return;
       } else {
-        _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60);
+        _rec_date_end = _rec_date_start + (time_t)(_rec_duration * 60.0f);
       }
       _rec_scheduled = true;
       _butt[REC_STOP]->set_stat(1);

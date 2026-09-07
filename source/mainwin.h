@@ -155,6 +155,8 @@ private:
     DT_START_STOP,
     AVMAX,
     DUAL_REC,
+    DT_LOOP,
+    REC_LOOP,
     NBUTT
   };
 
@@ -168,6 +170,7 @@ private:
 
   // CSV vars
   bool _is_accumulating_csv;
+  bool _is_looping_csv;
   bool _is_scheduled_csv_acc;
   int _current_pass_count;
   int _max_pass_count;
@@ -308,6 +311,7 @@ private:
 
   // Rec vars
   bool _is_recording;
+  bool _is_looping_wav;
   bool _rec_scheduled;
   float _rec_duration;
   time_t _rec_date_start;
