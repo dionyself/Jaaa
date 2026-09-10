@@ -51,9 +51,9 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   // Rec vars
   _is_recording = false;
-  _is_looping_wav = false;
+  _is_cue_required = false;
   _rec_scheduled = false;
-  _rec_fname_prefix = "geological_record";
+  _rec_fname_prefix = "geologic_decimated";
   _rec_date_start = 0;
   _rec_duration = 10.0f;
   _rec_date_end = 0;
@@ -80,6 +80,8 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _csv_start_countdown = 0;
 
   _alias_host_freq = 0;
+
+  _csv_loop_cnt = 0;
 
   // Configure X11 protocols (Windows closing and focus)
   _atoms[0] = XInternAtom(dpy(), "WM_DELETE_WINDOW", True);
@@ -202,12 +204,12 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   y += Bst1.size.y;
   _butt[TIMER] = new X_tbutton(this, this, &Bst1, x, y, "Duration", 0, TIMER);
   y += Bst1.size.y;
-  _butt[REC_LOOP] = new X_tbutton(this, this, &Bst1, x, y, "----", 0, REC_LOOP);
-  y += Bst1.size.y;
   _butt[REC_STOP] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
   y += Bst1.size.y + 15;
 
+  _butt[REC_CUE] = new X_tbutton(this, this, &Bst1, x, y, "Make .cue", 0, REC_CUE);
+  y += Bst1.size.y;
   _butt[DUAL_REC] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, DUAL_REC);
   y += Bst1.size.y + 15;
@@ -557,14 +559,19 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
     case TIMER:
       set_param(TIMER);
       break;
-    case REC_LOOP:
+    case REC_CUE:
+      if (!(_is_recording || _is_accumulating_csv || _is_scheduled_csv_acc || _rec_scheduled)) {
         if (B->stat()){
           B->set_stat(0);
-          _is_looping_wav = false;
+          _is_cue_required = false;
         }else{
           B->set_stat(2);
-          _is_looping_wav = true;
+          _is_cue_required = true;
+          _is_looping_csv = true;
         }
+      }else{
+        fprintf(stderr, "Cannot activate cue reneration while Recording, looping required\n");
+      }  
       break;
     case DT_LOOP:
         if (B->stat()){
@@ -577,7 +584,7 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       break;
     case REC_STOP:
       if (_is_recording || _rec_scheduled) {
-        _is_looping_wav = false;
+        _is_cue_required = false;
       }
       toggle_recording();
       break;
@@ -587,10 +594,10 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       }
       if (_is_recording || _rec_scheduled || _is_accumulating_csv ||
             _is_scheduled_csv_acc) {
-        _is_looping_wav = false;
+        _is_cue_required = false;
         _is_looping_csv = false;
         _butt[DT_LOOP]->set_stat(0);
-        _butt[REC_LOOP]->set_stat(0);
+        _butt[REC_CUE]->set_stat(0);
       }
       toggle_dual_recording();
       break;
@@ -730,7 +737,7 @@ void Mainwin::redraw(void) {
   D.drawstring("Demulating", -1);
   D.move(_xs - RMAR + 2, 575);
   D.drawstring("WAV Recorder", -1);
-  D.move(_xs - RMAR + 2, 657);
+  D.move(_xs - RMAR + 2, 640);
   D.drawstring("Sync Rec", -1);
   D.move(_xs - RMAR + 2, 690);
   D.drawstring("Curr value", -1);
@@ -1789,6 +1796,10 @@ void Mainwin::accumulate_csv_data(void) {
       time_t start_time = time(nullptr);
       fprintf(stderr, "restarting accumolator due to looping");
       start_acumulator(start_time, _dt_avg, _dt_amnt);
+      if (_is_recording && _is_cue_required) {
+        _csv_loop_cnt++;
+        fprintf(stderr, "Amount of csv files generated: %d \n", _csv_loop_cnt);
+      }
       return;
     }
   }
@@ -1831,10 +1842,10 @@ void Mainwin::export_to_csv(const char *filename_override) {
     time_t now = time(nullptr);
     struct tm *tm_info = localtime(&now);
     char date_str_end[64];
-    strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+    strftime(date_str_end, sizeof(date_str_end), "%Y-%m-%d_%H-%M-%S", tm_info);
     tm_info = localtime(&_csv_capture_start_time);
     char date_str_start[64];
-    strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+    strftime(date_str_start, sizeof(date_str_start), "%Y-%m-%d_%H-%M-%S", tm_info);
     snprintf(filename, sizeof(filename), "./geophysical_data/csv/spect_demod_%s__%s__%d__%d_raw.csv",
              date_str_start, date_str_end, _spect->_avcnt, _current_pass_count);
     fprintf(stderr, "Raw Values included in CSV file, to convert values to dB "
@@ -1883,6 +1894,15 @@ void Mainwin::export_to_csv(const char *filename_override) {
 void Mainwin::toggle_csv_accumulation(void) {
   if (_is_accumulating_csv || _is_scheduled_csv_acc) {
     stop_and_save_csv();
+    if (_is_cue_required && _is_recording && (_current_pass_count < _max_pass_count) && _is_looping_csv) {
+      // TODO: recalculate duration (we manually stopped it)
+      fprintf(stderr, "csv exported .. generating cue\n");
+      time_t now = time(nullptr);
+      fprintf(stderr, "CSV: manually stopped, creating cue at file # %d \n", _csv_loop_cnt);
+      create_cue_file(_rec_filename, ((now -_rec_date_start) / _decimation_factor) / 60, _csv_loop_cnt);
+      _csv_loop_cnt = 0; 
+    }
+    _is_looping_csv = false;
   } else {
     time_t start_time = time(nullptr);
     if (_dt_sched > 0.0f) {
@@ -2118,10 +2138,10 @@ void Mainwin::toggle_recording(void) {
     char date_str_end[64];
     char filename[256];
 
-    // Formato: YYYYMMDD_HHMMSS
-    strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+    // Format: YYYY-MM-DD_HH-MM-SS
+    strftime(date_str_start, sizeof(date_str_start), "%Y-%m-%d_%H-%M-%S", tm_info);
     tm_info = localtime(&now);
-    strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+    strftime(date_str_end, sizeof(date_str_end), "%Y-%m-%d_%H-%M-%S", tm_info);
     sprintf(filename, "./geophysical_data/wav/%s__%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
             date_str_end, _decimation_factor);
     strncpy(_rec_filename, filename, 126);
@@ -2136,7 +2156,12 @@ void Mainwin::toggle_recording(void) {
     _rec_date_start = 0;
     _butt[REC_STOP]->set_stat(0);
     fprintf(stderr, "Stopped Recording (event emited)\n");
-    //if (_is_looping_wav){}
+    if(_is_cue_required &&_is_accumulating_csv && _is_looping_csv)  {
+      // todo: recalculate duration if manually stopped else use _rec_duration
+      fprintf(stderr, "WAV: recording stopped at file # %d \n", _csv_loop_cnt);
+      create_cue_file(_rec_filename, ((now -_rec_date_start) / _decimation_factor )/ 60, _csv_loop_cnt);
+      _csv_loop_cnt = 0;  
+    }
     return;
   } else {
     _is_recording = true;
@@ -2181,10 +2206,10 @@ void Mainwin::toggle_recording(void) {
     char date_str_end[64];
     char filename[256];
 
-    // Formato: YYYYMMDD_HHMMSS
-    strftime(date_str_start, sizeof(date_str_start), "%Y%m%d_%H%M%S", tm_info);
+    // Format: YYYY-MM-DD_HH-MM-SS
+    strftime(date_str_start, sizeof(date_str_start), "%Y-%m-%d_%H-%M-%S", tm_info);
     tm_info = localtime(&_rec_date_end);
-    strftime(date_str_end, sizeof(date_str_end), "%Y%m%d_%H%M%S", tm_info);
+    strftime(date_str_end, sizeof(date_str_end), "%Y-%m-%d_%H-%M-%S", tm_info);
     if (_rec_date_end == 0) {
       sprintf(filename, "./geophysical_data/wav/%s__%s__%d.wav", _rec_fname_prefix, date_str_start,
               _decimation_factor);
@@ -2198,6 +2223,7 @@ void Mainwin::toggle_recording(void) {
     rec_f_info->_rec_filename[127] = '\0';
     rec_f_info->_rec_date_start = now;
     _rec_date_start = now;
+    _csv_loop_cnt = 0;
 
     _audio->put_event(EV_MESG, rec_f_info);
     _butt[REC_STOP]->set_stat(2); // Button color GUI Update
@@ -2207,11 +2233,10 @@ void Mainwin::toggle_recording(void) {
 }
 
 void Mainwin::toggle_dual_recording(void) {
-
-    if (_is_recording == _is_accumulating_csv) {
-      toggle_recording();
-      toggle_csv_accumulation();
-    }
+  if (_is_recording == _is_accumulating_csv) {
+    toggle_recording();
+    toggle_csv_accumulation();
+  }
 }
 
 void Mainwin::update_demulator(void) {
@@ -2232,4 +2257,82 @@ void Mainwin::update_demulator(void) {
 
   // Log to console (Optional)
   fprintf(stderr, "Demulator Update command emitted\n");
+}
+
+// Format to "MM:SS" or "MM:SS:FF" using snprintf (<stdio.h>)
+void Mainwin::format_time(int total_seconds, bool include_frames, char* out_buffer, size_t buffer_size) {
+    int minutes = total_seconds / 60;
+    int seconds = total_seconds % 60;
+
+    if (include_frames) {
+        // Assuming 00 frames
+        snprintf(out_buffer, buffer_size, "%02d-%02d-00", minutes, seconds);
+    } else {
+        snprintf(out_buffer, buffer_size, "%02d-%02d", minutes, seconds);
+    }
+}
+
+int Mainwin::create_cue_file(const char* wav_filename, int duration_minutes, int wav_parts) {
+    if (wav_parts <= 0 || duration_minutes <= 0) {
+        // Using fprintf instead of cout, maintaining your current standard for error handling
+        fprintf(stderr, "Error: Duration and number of parts must be greater than 0.\n duration: %d , parts: %d", duration_minutes , wav_parts);
+        return 1;
+    }
+
+    int total_seconds = duration_minutes * 60;
+    int seconds_per_part = total_seconds / wav_parts;
+
+    // Find the last occurrence of '/'
+    const char* filename = strrchr(wav_filename, '/');
+
+    // If '/' was found, move past it; otherwise, use the full path
+    filename = (filename != nullptr) ? filename + 1 : wav_filename;
+
+
+    // Generate the .cue filename based on the .wav name using C arrays
+    char cue_filename[256];
+    snprintf(cue_filename, sizeof(cue_filename), "./geophysical_data/cue/%s", filename);
+
+    // Find the last dot to change the extension to .cue
+    char* dot_pos = strrchr(cue_filename, '.');
+    if (dot_pos != NULL) {
+        strcpy(dot_pos, ".cue");
+    } else {
+        strncat(cue_filename, ".cue", sizeof(cue_filename) - strlen(cue_filename) - 1);
+    }
+
+    // Using FILE* and fopen from <stdio.h> instead of ofstream
+    FILE* cue_file = fopen(cue_filename, "w");
+    if (!cue_file) {
+        fprintf(stderr, "Error creating the file %s\n", cue_filename);
+        return 1;
+    }
+
+    fprintf(cue_file, "FILE \"%s\" WAVE\n", filename);
+
+    for (int i = 1; i <= wav_parts; ++i) {
+        int start_sec = (i - 1) * seconds_per_part;
+        // The end of the last track is the total time, to avoid losing seconds due to rounding
+        int end_sec = (i == wav_parts) ? total_seconds : i * seconds_per_part;
+
+        char start_time_str[16];
+        char end_time_str[16];
+        char index_time_str[16];
+
+        format_time(start_sec, false, start_time_str, sizeof(start_time_str));
+        format_time(end_sec, false, end_time_str, sizeof(end_time_str));
+        format_time(start_sec, true, index_time_str, sizeof(index_time_str));
+
+        fprintf(cue_file, "  TRACK %02d AUDIO\n", i);
+        fprintf(cue_file, "    TITLE \"part-%d__prefix__%s-%s\"\n", i, start_time_str, end_time_str);
+        fprintf(cue_file, "    INDEX 01 %s\n", index_time_str);
+    }
+
+    fclose(cue_file);
+    // shnsplit -f album.cue -o wav -t "%n - %t" album.wav
+    // shnsplit -f album.cue -o wav -t "%p - %n - %t" album.wav
+    // %n: Track number (automatically padded with a zero, e.g., 01, 02)
+    // %t: Track title%p: Performer / Artist name
+    // %a: Album title
+    return 0;
 }

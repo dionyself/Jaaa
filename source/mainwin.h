@@ -156,7 +156,7 @@ private:
     AVMAX,
     DUAL_REC,
     DT_LOOP,
-    REC_LOOP,
+    REC_CUE,
     NBUTT
   };
 
@@ -173,6 +173,7 @@ private:
   bool _is_looping_csv;
   bool _is_scheduled_csv_acc;
   int _current_pass_count;
+  int _csv_loop_cnt;
   int _max_pass_count;
   int _csv_capture_samp_between_captures;
   int _inter_samples_count;
@@ -185,6 +186,9 @@ private:
   int _dt_amnt;    // sample/passes amount
 
   std::vector<float> _csv_buffer;
+
+  void format_time(int total_seconds, bool include_frames, char* out_buffer, size_t buffer_size);
+  int create_cue_file(const char* wav_filename, int duration_minutes, int wav_parts);
 
   // Methods CSV
   void csv_export_init(time_t start_time, float averaging_time,
@@ -311,7 +315,7 @@ private:
 
   // Rec vars
   bool _is_recording;
-  bool _is_looping_wav;
+  bool _is_cue_required;
   bool _rec_scheduled;
   float _rec_duration;
   time_t _rec_date_start;
