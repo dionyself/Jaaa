@@ -1,0 +1,112 @@
+FILE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5.wav" WAVE
+  TRACK 01 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-1__00-00-00-05"
+    INDEX 01 00:00:00
+  TRACK 02 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-2__00-05-00-10"
+    INDEX 01 00:01:00
+  TRACK 03 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-3__00-10-00-15"
+    INDEX 01 00:02:00
+  TRACK 04 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-4__00-15-00-20"
+    INDEX 01 00:03:00
+  TRACK 05 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-5__00-20-00-25"
+    INDEX 01 00:04:00
+  TRACK 06 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-6__00-25-00-30"
+    INDEX 01 00:05:00
+  TRACK 07 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-7__00-30-00-35"
+    INDEX 01 00:06:00
+  TRACK 08 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-8__00-35-00-40"
+    INDEX 01 00:07:00
+  TRACK 09 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-9__00-40-00-45"
+    INDEX 01 00:08:00
+  TRACK 10 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-10__00-45-00-50"
+    INDEX 01 00:09:00
+  TRACK 11 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-11__00-50-00-55"
+    INDEX 01 00:10:00
+  TRACK 12 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-12__00-55-01-00"
+    INDEX 01 00:11:00
+  TRACK 13 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-13__01-00-01-05"
+    INDEX 01 00:12:00
+  TRACK 14 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-14__01-05-01-10"
+    INDEX 01 00:13:00
+  TRACK 15 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-15__01-10-01-15"
+    INDEX 01 00:14:00
+  TRACK 16 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-16__01-15-01-20"
+    INDEX 01 00:15:00
+  TRACK 17 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-17__01-20-01-25"
+    INDEX 01 00:16:00
+  TRACK 18 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-18__01-25-01-30"
+    INDEX 01 00:17:00
+  TRACK 19 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-19__01-30-01-35"
+    INDEX 01 00:18:00
+  TRACK 20 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-20__01-35-01-40"
+    INDEX 01 00:19:00
+  TRACK 21 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-21__01-40-01-45"
+    INDEX 01 00:20:00
+  TRACK 22 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-22__01-45-01-50"
+    INDEX 01 00:21:00
+  TRACK 23 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-23__01-50-01-55"
+    INDEX 01 00:22:00
+  TRACK 24 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-24__01-55-02-00"
+    INDEX 01 00:23:00
+  TRACK 25 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-25__02-00-02-05"
+    INDEX 01 00:24:00
+  TRACK 26 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-26__02-05-02-10"
+    INDEX 01 00:25:00
+  TRACK 27 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-27__02-10-02-15"
+    INDEX 01 00:26:00
+  TRACK 28 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-28__02-15-02-20"
+    INDEX 01 00:27:00
+  TRACK 29 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-29__02-20-02-25"
+    INDEX 01 00:28:00
+  TRACK 30 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-30__02-25-02-30"
+    INDEX 01 00:29:00
+  TRACK 31 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-31__02-30-02-35"
+    INDEX 01 00:30:00
+  TRACK 32 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-32__02-35-02-40"
+    INDEX 01 00:31:00
+  TRACK 33 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-33__02-40-02-45"
+    INDEX 01 00:32:00
+  TRACK 34 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-34__02-45-02-50"
+    INDEX 01 00:33:00
+  TRACK 35 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-35__02-50-02-55"
+    INDEX 01 00:34:00
+  TRACK 36 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-36__02-55-03-00"
+    INDEX 01 00:35:00
+  TRACK 37 AUDIO
+    TITLE "geologic_decimated__2026-09-13_03-30-49__2026-09-13_03-35-49__5_part-37__03-00-05-00"
+    INDEX 01 00:36:00
