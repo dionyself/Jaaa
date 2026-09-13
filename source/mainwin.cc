@@ -55,7 +55,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _rec_scheduled = false;
   _rec_fname_prefix = "geologic_decimated";
   _rec_date_start = 0;
-  _rec_duration = 10.0f;
+  _rec_duration = 5.0f;
   _rec_date_end = 0;
   _rec_capture_type = 0;
   _rec_file_type = 0;
@@ -69,10 +69,10 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _max_pass_count = 10;
   _inter_samples_count = 0;
   _dt_sched = 0.0f;
-  _dt_avg = 50.0f;
-  _dt_amnt = 10;
+  _dt_avg = 2.0f;
+  _dt_amnt = 5;
 
-  _decimation_factor = 256;
+  _decimation_factor = 5;
   _cutoff_freq = 6000.0f;
 
   _rec_start_countdown = 0;
@@ -1767,7 +1767,7 @@ void Mainwin::accumulate_csv_data(void) {
   }
 
   if (_is_accumulating_csv && _current_pass_count == 0 &&
-      _inter_samples_count == 0) {
+      _inter_samples_count == 0 && _csv_loop_cnt == 0 && !_butt[VIDAV]->stat()) {
     // activate Averaging
     _butt[VIDAV]->set_stat(2);
     _butt[PEAKH]->set_stat(0);
@@ -1794,7 +1794,7 @@ void Mainwin::accumulate_csv_data(void) {
     if (_is_looping_csv){
       _current_pass_count = 0;
       time_t start_time = time(nullptr);
-      fprintf(stderr, "restarting accumolator due to looping");
+      fprintf(stderr, "restarting accumulator due to looping");
       start_acumulator(start_time, _dt_avg, _dt_amnt);
       if (_is_recording && _is_cue_required) {
         _csv_loop_cnt++;
@@ -1899,7 +1899,7 @@ void Mainwin::toggle_csv_accumulation(void) {
       fprintf(stderr, "csv exported .. generating cue\n");
       time_t now = time(nullptr);
       fprintf(stderr, "CSV: manually stopped, creating cue at file # %d \n", _csv_loop_cnt);
-      create_cue_file(_rec_filename, ((now -_rec_date_start) / _decimation_factor) / 60, _csv_loop_cnt);
+      create_cue_file(_rec_filename, now -_rec_date_start, _decimation_factor, _csv_loop_cnt);
       _csv_loop_cnt = 0; 
     }
     _is_looping_csv = false;
@@ -2153,15 +2153,16 @@ void Mainwin::toggle_recording(void) {
     _is_recording = false;
     _rec_scheduled = false;
     _rec_date_end = 0;
-    _rec_date_start = 0;
+    
     _butt[REC_STOP]->set_stat(0);
     fprintf(stderr, "Stopped Recording (event emited)\n");
     if(_is_cue_required &&_is_accumulating_csv && _is_looping_csv)  {
       // todo: recalculate duration if manually stopped else use _rec_duration
       fprintf(stderr, "WAV: recording stopped at file # %d \n", _csv_loop_cnt);
-      create_cue_file(_rec_filename, ((now -_rec_date_start) / _decimation_factor )/ 60, _csv_loop_cnt);
+      create_cue_file(_rec_filename, now -_rec_date_start, _decimation_factor, _csv_loop_cnt);
       _csv_loop_cnt = 0;  
     }
+    _rec_date_start = 0;
     return;
   } else {
     _is_recording = true;
@@ -2234,6 +2235,12 @@ void Mainwin::toggle_recording(void) {
 
 void Mainwin::toggle_dual_recording(void) {
   if (_is_recording == _is_accumulating_csv) {
+    if (_is_looping_csv && _is_cue_required && !_is_recording){
+      if ((_dt_avg * _dt_amnt) / _decimation_factor < 2) {
+        fprintf(stderr, "Sorry decimated parts shouldbe at least 2 seconds duration\n Please increase increase 'Avg time' or 'Amount'");
+        return;
+      }
+    }
     toggle_recording();
     toggle_csv_accumulation();
   }
@@ -2260,33 +2267,47 @@ void Mainwin::update_demulator(void) {
 }
 
 // Format to "MM:SS" or "MM:SS:FF" using snprintf (<stdio.h>)
-void Mainwin::format_time(int total_seconds, bool include_frames, char* out_buffer, size_t buffer_size) {
-    int minutes = total_seconds / 60;
-    int seconds = total_seconds % 60;
+void Mainwin::format_time(int t_seconds, bool include_frames, char* out_buffer, size_t buffer_size) {
+    int minutes = t_seconds / 60;
+    int seconds = t_seconds % 60;
 
     if (include_frames) {
         // Assuming 00 frames
-        snprintf(out_buffer, buffer_size, "%02d-%02d-00", minutes, seconds);
+        snprintf(out_buffer, buffer_size, "%02d:%02d:00", minutes, seconds);
     } else {
         snprintf(out_buffer, buffer_size, "%02d-%02d", minutes, seconds);
     }
 }
 
-int Mainwin::create_cue_file(const char* wav_filename, int duration_minutes, int wav_parts) {
-    if (wav_parts <= 0 || duration_minutes <= 0) {
+int Mainwin::create_cue_file(const char* wav_filename, int duration_seconds, int decimation_factor, int wav_parts) {
+    if (wav_parts <= 0 || duration_seconds <= 0) {
         // Using fprintf instead of cout, maintaining your current standard for error handling
-        fprintf(stderr, "Error: Duration and number of parts must be greater than 0.\n duration: %d , parts: %d", duration_minutes , wav_parts);
+        fprintf(stderr, "Error: Duration and number of parts must be greater than 0.\n duration: %d , parts: %d", duration_seconds , wav_parts);
         return 1;
     }
 
-    int total_seconds = duration_minutes * 60;
-    int seconds_per_part = total_seconds / wav_parts;
+    fprintf(stderr, "INFO: Duration %d seconds \n", duration_seconds);
+    int decimated_duration = duration_seconds / decimation_factor;
+    int seconds_per_part = decimated_duration / wav_parts;
 
     // Find the last occurrence of '/'
     const char* filename = strrchr(wav_filename, '/');
 
     // If '/' was found, move past it; otherwise, use the full path
     filename = (filename != nullptr) ? filename + 1 : wav_filename;
+
+    char title_filename[256];
+    const char* t_dot_pos = strrchr(filename, '.');
+    if (t_dot_pos != nullptr) {
+      size_t length = t_dot_pos - filename;
+      // Copy up to the dot
+      strncpy(title_filename, filename, length);  
+      // Manually null-terminate the string
+      title_filename[length] = '\0'; 
+    } else {
+        // If no dot is found, copy the entire string safely
+        std::strncpy(title_filename, filename, sizeof(title_filename) - 1);
+    }
 
 
     // Generate the .cue filename based on the .wav name using C arrays
@@ -2313,18 +2334,18 @@ int Mainwin::create_cue_file(const char* wav_filename, int duration_minutes, int
     for (int i = 1; i <= wav_parts; ++i) {
         int start_sec = (i - 1) * seconds_per_part;
         // The end of the last track is the total time, to avoid losing seconds due to rounding
-        int end_sec = (i == wav_parts) ? total_seconds : i * seconds_per_part;
+        int end_sec = (i == wav_parts) ? decimated_duration : i * seconds_per_part;
 
         char start_time_str[16];
         char end_time_str[16];
-        char index_time_str[16];
+        char index_time_str[32]; // ???
 
-        format_time(start_sec, false, start_time_str, sizeof(start_time_str));
-        format_time(end_sec, false, end_time_str, sizeof(end_time_str));
+        format_time(start_sec * decimation_factor, false, start_time_str, sizeof(start_time_str));
+        format_time(end_sec * decimation_factor, false, end_time_str, sizeof(end_time_str));
         format_time(start_sec, true, index_time_str, sizeof(index_time_str));
 
         fprintf(cue_file, "  TRACK %02d AUDIO\n", i);
-        fprintf(cue_file, "    TITLE \"part-%d__prefix__%s-%s\"\n", i, start_time_str, end_time_str);
+        fprintf(cue_file, "    TITLE \"%s_part-%d__%s-%s\"\n", title_filename, i, start_time_str, end_time_str);
         fprintf(cue_file, "    INDEX 01 %s\n", index_time_str);
     }
 

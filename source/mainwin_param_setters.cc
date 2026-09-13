@@ -225,6 +225,10 @@ void Mainwin::set_rec_dt(float rec_dt) {
       rec_dt = 528000;
       fprintf(stderr, "Error: Maximun duration time is 528000 mins\n");
     }
+    if ((rec_dt * 60 / _decimation_factor) < 6) {
+      fprintf(stderr, "Error: Your _decimation_factor results  in a duration < 10 seconds ... \n recalculate duration/decimation factor to match 10 seconds  or more...\n");
+      return;
+    }
     _rec_duration = rec_dt;
     float frames_per_sec = (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
     _rec_samples_remaining = (long long)(rec_dt * 60.0f * frames_per_sec);

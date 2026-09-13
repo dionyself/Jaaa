@@ -188,7 +188,7 @@ private:
   std::vector<float> _csv_buffer;
 
   void format_time(int total_seconds, bool include_frames, char* out_buffer, size_t buffer_size);
-  int create_cue_file(const char* wav_filename, int duration_minutes, int wav_parts);
+  int create_cue_file(const char* wav_filename, int duration_seconds, int decimation_factor, int wav_parts);
 
   // Methods CSV
   void csv_export_init(time_t start_time, float averaging_time,
