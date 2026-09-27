@@ -42,6 +42,28 @@ Audio::Audio(ITC_ctrl *cmain, const char *name)
   _rec_host_freq = 32768.0; // (or 32.768 Khz / 2)
   _rec_cutoff_freq = 6000.0;
   _host_freq = 32768.0; // (or 32.768 Khz / 2)
+  _stop_band_freq = 60.0;
+  _stop_band_bandwidth = 4.0;
+
+  _sb_f1 = 58;
+  _sb_f2 = 62;
+  _sb_bw1 = 2;
+  _sb_bw2 = 2;
+  _sb_gain1 = -20;
+  _sb_gain2 = -20;
+  _sb_f3 = 118;
+  _sb_f4 = 122;
+  _sb_bw3 = 2;
+  _sb_bw4 = 2;
+  _sb_gain3 = -20;
+  _sb_gain4 = -20;
+  _sb_f5 = 178;
+  _sb_f6 = 182;
+  _sb_bw5 = 2;
+  _sb_bw6 = 2;
+  _sb_gain5 = -20;
+  _sb_gain6 = -20;
+
 }
 
 Audio::~Audio(void) {
@@ -81,10 +103,25 @@ void Audio::init_lpf_filter(unsigned int sample_rate, float host_freq,
   _demod_phase_inc = 2.0 * M_PI * host_freq / static_cast<double>(sample_rate);
   _filter_stage1.setLowPass(sample_rate, cutoff_freq);
   _filter_stage2.setLowPass(sample_rate, cutoff_freq);
+  
   fprintf(stderr,
           "lpf filter was updated to %u sample rate and  %f host freq  and  %f "
           "cutoff freq...\n",
           sample_rate, host_freq, cutoff_freq);
+}
+
+void Audio::init_notch_filters(unsigned int sample_rate,
+        float sb_f1, float sb_f2, float sb_f3, float sb_f4, float sb_f5, float sb_f6,
+        float sb_bw1, float sb_bw2, float sb_bw3, float sb_bw4, float sb_bw5, float sb_bw6,
+        float sb_gain1, float sb_gain2, float sb_gain3, float sb_gain4, float sb_gain5, float sb_gain6) {
+  _notch_filter_stage1.setNotch(sample_rate, sb_f1, sb_bw1, sb_gain1);
+  _notch_filter_stage2.setNotch(sample_rate, sb_f2, sb_bw2, sb_gain2);
+  _notch_filter_stage3.setNotch(sample_rate, sb_f3, sb_bw3, sb_gain3);
+  _notch_filter_stage4.setNotch(sample_rate, sb_f4, sb_bw4, sb_gain4);
+  _notch_filter_stage5.setNotch(sample_rate, sb_f5, sb_bw5, sb_gain5);
+  _notch_filter_stage6.setNotch(sample_rate, sb_f6, sb_bw6, sb_gain6);
+  fprintf(stderr,
+          "notch filters were updated");
 }
 
 void Audio::demodulate_buffer(float *input_buffer,
@@ -98,17 +135,23 @@ void Audio::demodulate_buffer(float *input_buffer,
     if (_demod_phase > 2.0 * M_PI)
       _demod_phase -= 2.0 * M_PI;
 
-    double mixed = input_buffer[i] * lo_signal;
+    double mixed = (double)input_buffer[i] * lo_signal;
 
-    double filtered1 = _filter_stage1.process(mixed);
-    double final_filtered = _filter_stage2.process(filtered1);
+    double notch1 = _notch_filter_stage1.process(mixed);
+    double notch2 = _notch_filter_stage2.process(notch1);
+    double notch3 = _notch_filter_stage3.process(notch2);
+    double notch4 = _notch_filter_stage4.process(notch3);
+    double notch5 = _notch_filter_stage5.process(notch4);
+    double notch6 = _notch_filter_stage6.process(notch5);
 
-    // Here output_buffer_demulated is expected to be the _demulated_data buffer
-    output_buffer_demulated[i] = (float)final_filtered;
+    double filtered1 = _filter_stage1.process(notch6);
+    double filtered2 = _filter_stage2.process(filtered1);
+
+    output_buffer_demulated[i] = (float)filtered2;
 
     if (_decim_counter % _demod_decimation == 0) {
       if (_is_recording) {
-        write_sample_to_wav((float)final_filtered);
+        write_sample_to_wav((float)filtered2);
         // std::cout << "_size: " << _size << ", _demod_decimation: " <<
         // _demod_decimation << "\n";
       }
@@ -456,6 +499,10 @@ void Audio::process(void) {
       _decim_counter = 0;
 
       init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
+      init_notch_filters(_fsamp,
+          _sb_f1, _sb_f2, _sb_f3, _sb_f4, _sb_f5, _sb_f6,
+          _sb_bw1, _sb_bw2, _sb_bw3, _sb_bw4, _sb_bw5, _sb_bw6,
+          _sb_gain1, _sb_gain2, _sb_gain3, _sb_gain4, _sb_gain5, _sb_gain6);
     } else if (M->type() == M_INPUT) {
       M_input *Z = (M_input *)M;
       _input = Z->_input;
@@ -504,7 +551,31 @@ void Audio::process(void) {
         _rec_decimation_factor = Z->_rec_decimation_factor;
         _rec_host_freq = Z->_rec_host_freq;
         _rec_cutoff_freq = Z->_rec_cutoff_freq;
+
+        _sb_f1 = Z->_sb_f1;
+        _sb_f2 = Z->_sb_f2;
+        _sb_bw1 = Z->_sb_bw1;
+        _sb_bw1 = Z->_sb_bw2;
+        _sb_gain1 = Z->_sb_gain1;
+        _sb_gain2 = Z->_sb_gain2;
+        _sb_f3 = Z->_sb_f3;
+        _sb_f4 = Z->_sb_f4;
+        _sb_bw3 = Z->_sb_bw3;
+        _sb_bw4 = Z->_sb_bw4;
+        _sb_gain3 = Z->_sb_gain3;
+        _sb_gain4 = Z->_sb_gain4;
+        _sb_f5 = Z->_sb_f5;
+        _sb_f6 = Z->_sb_f6;
+        _sb_bw5 = Z->_sb_bw5;
+        _sb_bw6 = Z->_sb_bw6;
+        _sb_gain5 = Z->_sb_gain5;
+        _sb_gain6 = Z->_sb_gain6;
+
         init_lpf_filter(_fsamp, _rec_host_freq, _rec_cutoff_freq);
+        init_notch_filters(_fsamp,
+            _sb_f1, _sb_f2, _sb_f3, _sb_f4, _sb_f5, _sb_f6,
+            _sb_bw1, _sb_bw2, _sb_bw3, _sb_bw4, _sb_bw5, _sb_bw6,
+            _sb_gain1, _sb_gain2, _sb_gain3, _sb_gain4, _sb_gain5, _sb_gain6);
       }
     }
     M->recover();

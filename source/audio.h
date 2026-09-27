@@ -63,6 +63,58 @@ public:
   }
 };
 
+
+class BiquadNotch {
+private:
+  double z1, z2;
+  double a1, a2, b0, b1, b2;
+  bool enabled;
+
+public:
+  BiquadNotch() : z1(0), z2(0), a1(0), a2(0), b0(0), b1(0), b2(0), enabled(false) {}
+
+  // Sets up the notch filter with adjustable attenuation depth.
+  // gain_db: Atenuación en decibelios (debe ser <= 0.0 para atenuar).
+  //          Ejemplo: -6.0 para una muesca suave, -40.0 para un corte profundo.
+  void setNotch(double sample_rate, double center_freq, double bandwidth, double gain_db = -40.0) {
+    if (center_freq <= 0.0) {
+      enabled = false;
+      return;
+    }
+    enabled = true;
+    
+    double w0 = 2.0 * M_PI * center_freq / sample_rate;
+    double cos_w0 = cos(w0);
+    double q_factor = center_freq / bandwidth; 
+    double alpha = sin(w0) / (2.0 * q_factor);
+
+    // Conversión de ganancia en dB a factor de amplitud lineal (Fórmula RBJ)
+    double A = pow(10.0, gain_db / 40.0);
+
+    double a0 = 1.0 + (alpha / A);
+
+    // Coeficientes normalizados para muesca con profundidad ajustable
+    b0 = (1.0 + (alpha * A)) / a0;
+    b1 = (-2.0 * cos_w0) / a0;
+    b2 = (1.0 - (alpha * A)) / a0;
+    a1 = (-2.0 * cos_w0) / a0;
+    a2 = (1.0 - (alpha / A)) / a0;
+
+    // Reset delay lines to avoid popping on parameter switch
+    z1 = 0;
+    z2 = 0;
+  }
+
+  inline double process(double input) {
+    if (!enabled) return input;
+    double output = (b0 * input) + z1;
+    z1 = (b1 * input) - (a1 * output) + z2;
+    z2 = (b2 * input) - (a2 * output);
+    return output;
+  }
+};
+
+
 class Audio : public A_thread {
 public:
   Audio(ITC_ctrl *cmain, const char *name);
@@ -79,6 +131,14 @@ public:
                            float host_freq, float cutoff_freq,
                            int decimation_factor);
   void stop_wav_recording(char filename[128], float original_sample_rate);
+
+  void init_notch_filters(unsigned int,
+        float, float, float,
+        float, float, float,
+        float, float, float,
+        float, float, float,
+        float, float, float,
+        float, float, float);
 
 private:
   enum { LSINE = 4096, LRAND = 4096, MRAND = LRAND - 1 };
@@ -150,6 +210,14 @@ private:
   double _demod_phase_inc;
   BiquadLPF _filter_stage1;
   BiquadLPF _filter_stage2;
+  BiquadNotch _notch_filter_stage1; // New notch filter
+  BiquadNotch _notch_filter_stage2; // New notch filter
+  BiquadNotch _notch_filter_stage3; // New notch filter
+  BiquadNotch _notch_filter_stage4; // New notch filter
+  BiquadNotch _notch_filter_stage5; // New notch filter
+  BiquadNotch _notch_filter_stage6; // New notch filter
+  float _stop_band_freq;
+  float _stop_band_bandwidth;
   float _host_freq;
 
   // Rec/Dec/Dem/Fil State vars
@@ -165,6 +233,25 @@ private:
   unsigned int _rec_fsamp;
   float _rec_host_freq;
   float _rec_cutoff_freq;
+  
+  float _sb_f1;
+  float _sb_f2;
+  float _sb_bw1;
+  float _sb_bw2;
+  float _sb_gain1;
+  float _sb_gain2;
+  float _sb_f3;
+  float _sb_f4;
+  float _sb_bw3;
+  float _sb_bw4;
+  float _sb_gain3;
+  float _sb_gain4;
+  float _sb_f5;
+  float _sb_f6;
+  float _sb_bw5;
+  float _sb_bw6;
+  float _sb_gain5;
+  float _sb_gain6;
 
   static void jack_static_shutdown(void *arg);
   static int jack_static_callback(jack_nframes_t nframes, void *arg);

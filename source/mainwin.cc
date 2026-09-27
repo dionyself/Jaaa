@@ -61,6 +61,27 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _rec_file_type = 0;
   _rec_action = 0;
 
+  _sb_f1 = 58;
+  _sb_f2 = 62;
+  _sb_bw1 = 2;
+  _sb_bw2 = 2;
+  _sb_gain1 = -20;
+  _sb_gain2 = -20;
+
+  _sb_f3 = 118;
+  _sb_f4 = 122;
+  _sb_bw3 = 2;
+  _sb_bw4 = 2;
+  _sb_gain3 = -20;
+  _sb_gain4 = -20;
+
+  _sb_f5 = 178;
+  _sb_f6 = 182;
+  _sb_bw5 = 2;
+  _sb_bw6 = 2;
+  _sb_gain5 = -20;
+  _sb_gain6 = -20;
+
   // CSV vars
   _is_accumulating_csv = false;
   _is_looping_csv = false;
@@ -126,34 +147,40 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   // Analitic buttons
   Bst1.size.x = RMAR - 6;
-  _butt[BANDW] = new X_tbutton(this, this, &Bst1, x, y, "Bandw", 0, BANDW);
+  _butt[BANDW] = new X_tbutton(this, this, &Bst1, x, y, "Bandwidth", 0, BANDW);
   y += Bst1.size.y;
-  _butt[AVMAX] = new X_tbutton(this, this, &Bst1, x, y, "Av.Max", 0, AVMAX);
+  _butt[AVMAX] = new X_tbutton(this, this, &Bst1, x, y, "Avg Cnt", 0, AVMAX);
   y += Bst1.size.y;
-  _butt[VIDAV] = new X_tbutton(this, this, &Bst1, x, y, "Vid.Av", 0, VIDAV);
+  _butt[VIDAV] = new X_tbutton(this, this, &Bst1, x, y, "Avg Mode", 0, VIDAV);
   y += Bst1.size.y;
-  _butt[PEAKH] = new X_tbutton(this, this, &Bst1, x, y, "Pk Hold", 0, PEAKH);
+  _butt[PEAKH] = new X_tbutton(this, this, &Bst1, x, y, "Peak Hold", 0, PEAKH);
   y += Bst1.size.y;
   _butt[FREEZ] = new X_tbutton(this, this, &Bst1, x, y, "Freeze", 0, FREEZ);
   y += Bst1.size.y + 15;
 
   // Markers
-  _butt[MCLR] = new X_tbutton(this, this, &Bst1, x, y, "Clear", 0, MCLR);
-  y += Bst1.size.y;
+  Bst1.size.x = RMAR - 43;
   _butt[MPEAK] = new X_tbutton(this, this, &Bst1, x, y, "Peak", 0, MPEAK);
+  //y += Bst1.size.y;
+  _butt[MNSE] = new X_tbutton(this, this, &Bst1, x+37, y, "Noise", 0, MNSE);
   y += Bst1.size.y;
-  _butt[MNSE] = new X_tbutton(this, this, &Bst1, x, y, "Noise", 0, MNSE);
+  Bst1.size.x = RMAR - 6;
+  _butt[MCLR] = new X_tbutton(this, this, &Bst1, x, y, "Clear", 0, MCLR);
   y += Bst1.size.y + 15;
 
+
   // Scalling and frequency controls
+  Bst1.size.x = RMAR - 43;
   _butt[FMIN] = new X_tbutton(this, this, &Bst1, x, y, "Min", 0, FMIN);
-  y += Bst1.size.y;
-  _butt[FMAX] = new X_tbutton(this, this, &Bst1, x, y, "Max", 0, FMAX);
+  // y += Bst1.size.y;
+  _butt[FMAX] = new X_tbutton(this, this, &Bst1, x+37, y, "Max", 0, FMAX);
   y += Bst1.size.y;
   _butt[FCENT] = new X_tbutton(this, this, &Bst1, x, y, "Cent", 0, FCENT);
-  y += Bst1.size.y;
-  _butt[FSPAN] = new X_tbutton(this, this, &Bst1, x, y, "Span", 0, FSPAN);
+  //y += Bst1.size.y;
+  _butt[FSPAN] = new X_tbutton(this, this, &Bst1, x+37, y, "Span", 0, FSPAN);
   y += Bst1.size.y + 15;
+
+  Bst1.size.x = RMAR - 6;
 
   // Amplitude controls
   _butt[AMAX] = new X_tbutton(this, this, &Bst1, x, y, "Max", 0, AMAX);
@@ -191,6 +218,64 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   // Demulating
   _butt[HOSTF] = new X_tbutton(this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
   y += Bst1.size.y;
+
+  Bst1.size.x = RMAR - 55;
+  _butt[SBF1] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF1);
+  //y += Bst1.size.y;
+  _butt[SBBW1] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw1", 0, SBBW1);
+  //y += Bst1.size.y;
+  _butt[SBGN1] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN1);
+  y += Bst1.size.y;
+
+  _butt[SBF2] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF2);
+  //y += Bst1.size.y;
+  _butt[SBBW2] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw2", 0, SBBW2);
+  //y += Bst1.size.y;
+  _butt[SBGN2] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN2);
+  y += Bst1.size.y;
+
+  _butt[SBF3] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF3);
+  //y += Bst1.size.y;
+  _butt[SBBW3] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw3", 0, SBBW3);
+  //y += Bst1.size.y;
+  _butt[SBGN3] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN3);
+  y += Bst1.size.y;
+
+  _butt[SBF4] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF4);
+  //y += Bst1.size.y;
+  _butt[SBBW4] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw4", 0, SBBW4);
+  //y += Bst1.size.y;
+  _butt[SBGN4] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN4);
+  y += Bst1.size.y;
+
+    _butt[SBF5] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF5);
+  //y += Bst1.size.y;
+  _butt[SBBW5] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw5", 0, SBBW5);
+  //y += Bst1.size.y;
+  _butt[SBGN5] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN5);
+  y += Bst1.size.y;
+
+    _butt[SBF6] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SBF6);
+  //y += Bst1.size.y;
+  _butt[SBBW6] =
+      new X_tbutton(this, this, &Bst1, x+25, y, "Bw6", 0, SBBW6);
+  //y += Bst1.size.y;
+  _butt[SBGN6] =
+      new X_tbutton(this, this, &Bst1, x+50, y, "Gain", 0, SBGN6);
+  y += Bst1.size.y;
+
+  Bst1.size.x = RMAR - 6;
+
   _butt[CUTOFF] = new X_tbutton(this, this, &Bst1, x, y, "Cutoff F", 0, CUTOFF);
   y += Bst1.size.y;
   _butt[REC_DEC] =
@@ -253,17 +338,21 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[SI1_ACT] =
       new X_tbutton(this, this, &Bst0, XDEF - 30, y, "On", 0, SI1_ACT);
   y += Bst0.size.y;
+  Bst1.size.x = RMAR - 43;
   _butt[SI1_LEV] = new X_tbutton(this, this, &Bst1, x, y, "Ampl", 0, SI1_LEV);
-  y += Bst1.size.y;
-  _butt[SI1_FREQ] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SI1_FREQ);
+  //y += Bst1.size.y;
+  _butt[SI1_FREQ] = new X_tbutton(this, this, &Bst1, x+37, y, "Freq", 0, SI1_FREQ);
+  Bst1.size.x = RMAR - 6;
 
   y += Bst0.size.y + 5;
   _butt[SI2_ACT] =
       new X_tbutton(this, this, &Bst0, XDEF - 30, y, "On", 0, SI2_ACT);
   y += Bst0.size.y;
+  Bst1.size.x = RMAR - 43;
   _butt[SI2_LEV] = new X_tbutton(this, this, &Bst1, x, y, "Ampl", 0, SI2_LEV);
-  y += Bst1.size.y;
-  _butt[SI2_FREQ] = new X_tbutton(this, this, &Bst1, x, y, "Freq", 0, SI2_FREQ);
+  //y += Bst1.size.y;
+  _butt[SI2_FREQ] = new X_tbutton(this, this, &Bst1, x+37, y, "Freq", 0, SI2_FREQ);
+  Bst1.size.x = RMAR - 6;
 
   for (int i = 0; i < NBUTT; i++) {
     _butt[i]->x_set_win_gravity(NorthEastGravity);
@@ -435,6 +524,60 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
         case TIMER:
           set_rec_dt(_p_val);
           break;
+        case SBF1:
+          set_sbf1(_p_val);
+          break;
+        case SBBW1:
+          set_sbbw1(_p_val);
+          break;
+        case SBGN1:
+          set_sbgn1(_p_val);
+          break;
+        case SBF2:
+          set_sbf2(_p_val);
+          break;
+        case SBBW2:
+          set_sbbw2(_p_val);
+          break;
+        case SBGN2:
+          set_sbgn2(_p_val);
+          break;
+        case SBF3:
+          set_sbf3(_p_val);
+          break;
+        case SBBW3:
+          set_sbbw3(_p_val);
+          break;
+        case SBGN3:
+          set_sbgn3(_p_val);
+          break;
+        case SBF4:
+          set_sbf4(_p_val);
+          break;
+        case SBBW4:
+          set_sbbw4(_p_val);
+          break;
+        case SBGN4:
+          set_sbgn4(_p_val);
+          break;
+        case SBF5:
+          set_sbf5(_p_val);
+          break;
+        case SBBW5:
+          set_sbbw5(_p_val);
+          break;
+        case SBGN5:
+          set_sbgn5(_p_val);
+          break;
+        case SBF6:
+          set_sbf6(_p_val);
+          break;
+        case SBBW6:
+          set_sbbw6(_p_val);
+          break;
+        case SBGN6:
+          set_sbgn6(_p_val);
+          break;
         }
       }
       show_param();
@@ -466,6 +609,24 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
     case FSPAN:
     case AMAX:
     case ASPAN:
+    case SBF1:
+    case SBBW1:
+    case SBGN1:
+    case SBF2:
+    case SBBW2:
+    case SBGN2:
+    case SBF3:
+    case SBBW3:
+    case SBGN3:
+    case SBF4:
+    case SBBW4:
+    case SBGN4:
+    case SBF5:
+    case SBBW5:
+    case SBGN5:
+    case SBF6:
+    case SBBW6:
+    case SBGN6:
     case NSE_LEV:
     case SI1_LEV:
     case SI1_FREQ:
@@ -620,18 +781,22 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
         } else{
           set_f1(_host_freq);
         }
-        set_bw(5.859f);
+        set_bw(93.75f);
         set_param(BANDW);
         _butt[DMOD]->set_stat(2);
         _butt[ELF_MOD]->set_stat(0);
         _butt[ULF_MOD]->set_stat(0);
+
+        _butt[VIDAV]->set_stat(0);
+        _spect->_avcnt = 0;
       } else {
         _f0 = 0.0f;
         set_f1(_fmax);
-        set_bw(46.875f);
+        set_bw(375.0f);
         set_param(BANDW);
         _butt[DMOD]->set_stat(0);
       }
+      update_demulator();
       break;
     case ULF_MOD:
 
@@ -641,16 +806,31 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
         set_bw(46.875f);
         set_param(BANDW);
         _butt[ULF_MOD]->set_stat(0);
+
+        _butt[VIDAV]->set_stat(0);
+        _spect->_avcnt = 0;
+
       } else {
         _f0 = 0.0f;
-        set_f1(3.0f);
-        set_bw(0.366f);
+        set_f1(10.0f);
+        set_bw(0.37f);
         set_param(BANDW);
         _butt[ULF_MOD]->set_stat(2);
         _butt[ELF_MOD]->set_stat(0);
         _is_lsb_view = false;
         _butt[DMOD]->set_stat(0);
+
+        set_vamax(20.0f);
+
+        _butt[VIDAV]->set_stat(2);
+        _butt[PEAKH]->set_stat(0);
+        _spect->_avcnt = 1;
+        _spect->_bits &= ~Spectdata::PEAKH;
+
+        set_cutoff(12.0f);
+
       }
+      update_demulator();
       break;
     case ELF_MOD:
       if (_butt[ELF_MOD]->stat()) {
@@ -659,16 +839,30 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
         set_bw(46.875f);
         set_param(BANDW);
         _butt[ELF_MOD]->set_stat(0);
+
+        _butt[VIDAV]->set_stat(0);
+        _spect->_avcnt = 0;
+
       } else {
         _f0 = 0.0f;
-        set_f1(10.0f);
-        set_bw(0.732f);
+        set_f1(40.0f);
+        set_bw(0.73f);
         set_param(BANDW);
         _butt[ELF_MOD]->set_stat(2);
         _butt[ULF_MOD]->set_stat(0);
         _is_lsb_view = false;
         _butt[DMOD]->set_stat(0);
+        set_vamax(20.0f);
+
+        _butt[VIDAV]->set_stat(2);
+        _butt[PEAKH]->set_stat(0);
+        _spect->_avcnt = 1;
+        _spect->_bits &= ~Spectdata::PEAKH;
+
+        set_cutoff(42.0f);
+
       }
+      update_demulator();
       break;
     }
     break;
@@ -725,31 +919,31 @@ void Mainwin::redraw(void) {
   D.drawstring("Analyser", -1);
   D.move(_xs - RMAR + 2, 160);
   D.drawstring("Markers", -1);
-  D.move(_xs - RMAR + 2, 225);
+  D.move(_xs - RMAR + 2, 210);
   D.drawstring("Frequency", -1);
-  D.move(_xs - RMAR + 2, 310);
+  D.move(_xs - RMAR + 2, 260);
   D.drawstring("Amplitude", -1);
-  D.move(_xs - RMAR + 2, 358);
+  D.move(_xs - RMAR + 2, 307);
   D.drawstring("View Types", -1);
-  D.move(_xs - RMAR + 2, 390);
+  D.move(_xs - RMAR + 2, 340);
   D.drawstring("Export CSV", -1);
-  D.move(_xs - RMAR + 2, 490);
+  D.move(_xs - RMAR + 2, 440);
   D.drawstring("Demulating", -1);
-  D.move(_xs - RMAR + 2, 575);
+  D.move(_xs - RMAR + 2, 622);
   D.drawstring("WAV Recorder", -1);
-  D.move(_xs - RMAR + 2, 640);
+  D.move(_xs - RMAR + 2, 692);
   D.drawstring("Sync Rec", -1);
-  D.move(_xs - RMAR + 2, 690);
-  D.drawstring("Curr value", -1);
-  D.move(_xs - RMAR + 2, 725);
-  D.drawstring("Dec/Inc", -1);
   D.move(_xs - RMAR + 2, 740);
+  D.drawstring("Curr value", -1);
+  D.move(_xs - RMAR + 2, 770);
+  D.drawstring("Dec/Inc", -1);
+  D.move(_xs - RMAR + 2, 790);
   D.drawstring("   ---Output---", -1);
-  D.move(_xs - RMAR + 2, 798);
+  D.move(_xs - RMAR + 2, 850);
   D.drawstring("Noise", -1);
-  D.move(_xs - RMAR + 2, 838);
+  D.move(_xs - RMAR + 2, 888);
   D.drawstring("Sine1", -1);
-  D.move(_xs - RMAR + 2, 893);
+  D.move(_xs - RMAR + 2, 928);
   D.drawstring("Sine2", -1);
 
   plot_fscale();
@@ -971,6 +1165,60 @@ void Mainwin::set_param(int i) {
   case REC_DEC:
     _p_val = (float)_decimation_factor;
     break;
+  case SBF1:
+    _p_val = _sb_f1;
+    break;
+  case SBF2:
+    _p_val = _sb_f2;
+    break;
+  case SBF3:
+    _p_val = _sb_f3;
+    break;
+  case SBF4:
+    _p_val = _sb_f4;
+    break;
+  case SBF5:
+    _p_val = _sb_f5;
+    break;
+  case SBF6:
+    _p_val = _sb_f6;
+    break;
+  case SBBW1:
+    _p_val = _sb_bw1;
+    break;
+  case SBBW2:
+    _p_val = _sb_bw2;
+    break;
+  case SBBW3:
+    _p_val = _sb_bw3;
+    break;
+  case SBBW4:
+    _p_val = _sb_bw4;
+    break;
+  case SBBW5:
+    _p_val = _sb_bw5;
+    break;
+  case SBBW6:
+    _p_val = _sb_bw6;
+    break;
+  case SBGN1:
+    _p_val = _sb_gain1;
+    break;
+  case SBGN2:
+    _p_val = _sb_gain2;
+    break;
+  case SBGN3:
+    _p_val = _sb_gain3;
+    break;
+  case SBGN4:
+    _p_val = _sb_gain4;
+    break;
+  case SBGN5:
+    _p_val = _sb_gain5;
+    break;
+  case SBGN6:
+    _p_val = _sb_gain6;
+    break;
   case CUTOFF:
     _p_val = _cutoff_freq;
     break;
@@ -1109,6 +1357,12 @@ void Mainwin::show_param(void) {
   case NSE_LEV:
   case SI1_LEV:
   case SI2_LEV:
+  case SBGN1:
+  case SBGN2:
+  case SBGN3:
+  case SBGN4:
+  case SBGN5:
+  case SBGN6:
     sprintf(s, "%2.1f dB", _p_val);
     break;
   case AVMAX:
@@ -1126,6 +1380,18 @@ void Mainwin::show_param(void) {
   case DT_AMNT:
     sprintf(s, "%8.0f samps", _p_val);
     break;
+  case SBF1:
+  case SBF2:
+  case SBF3:
+  case SBF4:
+  case SBF5:
+  case SBF6:
+  case SBBW1:
+  case SBBW2:
+  case SBBW3:
+  case SBBW4:
+  case SBBW5:
+  case SBBW6:
   case HOSTF:    
     if (_p_val < 1e3)
       sprintf(s, "%5.3f Hz", _p_val);
@@ -2258,6 +2524,26 @@ void Mainwin::update_demulator(void) {
   // We are not processing a file
   // strncpy(update_info->_rec_filename, _rec_filename, 126);
   // update_info->_rec_filename[127] = '\0';
+
+  update_info->_sb_f1 = _sb_f1;
+  update_info->_sb_f2 = _sb_f2;
+  update_info->_sb_bw1 = _sb_bw1;
+  update_info->_sb_bw2 = _sb_bw2;
+  update_info->_sb_gain1 = _sb_gain1;
+  update_info->_sb_gain2 = _sb_gain2;
+  update_info->_sb_f3 = _sb_f3;
+  update_info->_sb_f4 = _sb_f4;
+  update_info->_sb_bw3 = _sb_bw3;
+  update_info->_sb_bw4 = _sb_bw4;
+  update_info->_sb_gain3 = _sb_gain3;
+  update_info->_sb_gain4 = _sb_gain4;
+  update_info->_sb_f5 = _sb_f5;
+  update_info->_sb_f6 = _sb_f6;
+  update_info->_sb_bw5 = _sb_bw5;
+  update_info->_sb_bw6 = _sb_bw6;
+  update_info->_sb_gain5 = _sb_gain5;
+  update_info->_sb_gain6 = _sb_gain6;
+
 
   // Sending the event
   _audio->put_event(EV_MESG, update_info);

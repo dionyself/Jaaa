@@ -157,12 +157,31 @@ private:
     DUAL_REC,
     DT_LOOP,
     REC_CUE,
+    SBF1,
+    SBF2,
+    SBBW1,
+    SBBW2,
+    SBGN1,
+    SBGN2,
+    SBF3,
+    SBF4,
+    SBBW3,
+    SBBW4,
+    SBGN3,
+    SBGN4,
+    SBF5,
+    SBF6,
+    SBBW5,
+    SBBW6,
+    SBGN5,
+    SBGN6,
     NBUTT
   };
 
   enum {
     FFT_MIN = 256,
-    FFT_MAX = 1024 * 256,
+    //FFT_MAX = 1024 * 256,
+    FFT_MAX = 1024 * 1024,
     BUF_LEN = 2 * FFT_MAX,
     INP_MAX = BUF_LEN - FFT_MAX / 2,
     INP_LEN = 4096
@@ -225,6 +244,24 @@ private:
   void set_dt_amnt(float);
   void set_host_f(float);
   void set_rec_dec(float);
+  void set_sbf1(float);
+  void set_sbbw1(float);
+  void set_sbgn1(float);
+  void set_sbf2(float);
+  void set_sbbw2(float);
+  void set_sbgn2(float);
+  void set_sbf3(float);
+  void set_sbbw3(float);
+  void set_sbgn3(float);
+  void set_sbf4(float);
+  void set_sbbw4(float);
+  void set_sbgn4(float);
+  void set_sbf5(float);
+  void set_sbbw5(float);
+  void set_sbgn5(float);
+  void set_sbf6(float);
+  void set_sbbw6(float);
+  void set_sbgn6(float);
   void set_cutoff(float);
   void set_sched(float);
   void set_rec_dt(float);
@@ -309,6 +346,27 @@ private:
 
   float _host_freq;
   float _alias_host_freq;
+
+  float _sb_f1;
+  float _sb_f2;
+  float _sb_bw1;
+  float _sb_bw2;
+  float _sb_gain1;
+  float _sb_gain2;
+  float _sb_f3;
+  float _sb_f4;
+  float _sb_bw3;
+  float _sb_bw4;
+  float _sb_gain3;
+  float _sb_gain4;
+  float _sb_f5;
+  float _sb_f6;
+  float _sb_bw5;
+  float _sb_bw6;
+  float _sb_gain5;
+  float _sb_gain6;
+
+
   float _cutoff_freq;
   bool _is_lsb_view;
   int _decimation_factor;

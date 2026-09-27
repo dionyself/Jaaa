@@ -293,3 +293,59 @@ void Mainwin::set_f_si2(float a) {
   _f_si2 = a;
   send_genp();
 }
+
+void Mainwin::set_sbf1(float a) {
+  _sb_f1 = a;
+}
+void Mainwin::set_sbbw1(float a) {
+  _sb_bw1 = a;
+}
+void Mainwin::set_sbgn1(float a) {
+  _sb_gain1 = a;
+}
+void Mainwin::set_sbf2(float a) {
+  _sb_f2 = a;
+}
+void Mainwin::set_sbbw2(float a) {
+  _sb_bw2 = a;
+}
+void Mainwin::set_sbgn2(float a) {
+  _sb_gain2 = a;
+}
+void Mainwin::set_sbf3(float a) {
+  _sb_f3 = a;
+}
+void Mainwin::set_sbbw3(float a) {
+  _sb_bw3 = a;
+}
+void Mainwin::set_sbgn3(float a) {
+  _sb_gain3 = a;
+}
+void Mainwin::set_sbf4(float a) {
+  _sb_f4 = a;
+}
+void Mainwin::set_sbbw4(float a) {
+  _sb_bw4 = a;
+}
+void Mainwin::set_sbgn4(float a) {
+  _sb_gain4 = a;
+}
+
+void Mainwin::set_sbf5(float a) {
+  _sb_f5 = a;
+}
+void Mainwin::set_sbbw5(float a) {
+  _sb_bw5 = a;
+}
+void Mainwin::set_sbgn5(float a) {
+  _sb_gain5 = a;
+}
+void Mainwin::set_sbf6(float a) {
+  _sb_f6 = a;
+}
+void Mainwin::set_sbbw6(float a) {
+  _sb_bw6 = a;
+}
+void Mainwin::set_sbgn6(float a) {
+  _sb_gain6 = a;
+}

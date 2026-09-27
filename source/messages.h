@@ -78,6 +78,24 @@ public:
   float _rec_host_freq;
   float _rec_cutoff_freq;
   int _rec_decimation_factor;
+  float _sb_f1;
+  float _sb_f2;
+  float _sb_bw1;
+  float _sb_bw2;
+  float _sb_gain1;
+  float _sb_gain2;
+  float _sb_f3;
+  float _sb_f4;
+  float _sb_bw3;
+  float _sb_bw4;
+  float _sb_gain3;
+  float _sb_gain4;
+  float _sb_f5;
+  float _sb_f6;
+  float _sb_bw5;
+  float _sb_bw6;
+  float _sb_gain5;
+  float _sb_gain6;
 };
 
 class M_input : public ITC_mesg {
