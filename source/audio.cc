@@ -37,13 +37,11 @@ Audio::Audio(ITC_ctrl *cmain, const char *name)
   _rec_capture_type = 0;
   _rec_file_type = 0;
   _rec_action = 0;
-  _rec_decimation_factor = 256;
+  _rec_decimation_factor = 32;
   _rec_fsamp = 0;
-  _rec_host_freq = 32768.0; // (or 32.768 Khz / 2)
+  _rec_host_freq = 32768.0;
   _rec_cutoff_freq = 6000.0;
-  _host_freq = 32768.0; // (or 32.768 Khz / 2)
-  _stop_band_freq = 60.0;
-  _stop_band_bandwidth = 4.0;
+  _host_freq = 32768.0;
 
   _sb_f1 = 58;
   _sb_f2 = 62;
@@ -63,7 +61,6 @@ Audio::Audio(ITC_ctrl *cmain, const char *name)
   _sb_bw6 = 2;
   _sb_gain5 = -20;
   _sb_gain6 = -20;
-
 }
 
 Audio::~Audio(void) {
@@ -152,8 +149,6 @@ void Audio::demodulate_buffer(float *input_buffer,
     if (_decim_counter % _demod_decimation == 0) {
       if (_is_recording) {
         write_sample_to_wav((float)filtered2);
-        // std::cout << "_size: " << _size << ", _demod_decimation: " <<
-        // _demod_decimation << "\n";
       }
     }
     _decim_counter++;
@@ -298,7 +293,6 @@ void Audio::init_alsa(const char *playdev, const char *captdev,
 }
 
 void Audio::close_alsa() {
-  //    fprintf (stderr, "Closing ALSA...\n");
   _run_alsa = false;
   get_event(1 << EV_EXIT);
   delete _alsa_handle;

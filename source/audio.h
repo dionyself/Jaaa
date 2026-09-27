@@ -74,8 +74,8 @@ public:
   BiquadNotch() : z1(0), z2(0), a1(0), a2(0), b0(0), b1(0), b2(0), enabled(false) {}
 
   // Sets up the notch filter with adjustable attenuation depth.
-  // gain_db: Atenuación en decibelios (debe ser <= 0.0 para atenuar).
-  //          Ejemplo: -6.0 para una muesca suave, -40.0 para un corte profundo.
+  // gain_db:  (shouldbe <= 0.0 for attenuating).
+  // Ex: -6.0 soft, -40.0 for aggresive att.
   void setNotch(double sample_rate, double center_freq, double bandwidth, double gain_db = -40.0) {
     if (center_freq <= 0.0) {
       enabled = false;
@@ -88,12 +88,11 @@ public:
     double q_factor = center_freq / bandwidth; 
     double alpha = sin(w0) / (2.0 * q_factor);
 
-    // Conversión de ganancia en dB a factor de amplitud lineal (Fórmula RBJ)
+    // Convert dB gain  to  lineal pmplitude factor (RBJ)
     double A = pow(10.0, gain_db / 40.0);
 
     double a0 = 1.0 + (alpha / A);
 
-    // Coeficientes normalizados para muesca con profundidad ajustable
     b0 = (1.0 + (alpha * A)) / a0;
     b1 = (-2.0 * cos_w0) / a0;
     b2 = (1.0 - (alpha * A)) / a0;
@@ -216,8 +215,6 @@ private:
   BiquadNotch _notch_filter_stage4; // New notch filter
   BiquadNotch _notch_filter_stage5; // New notch filter
   BiquadNotch _notch_filter_stage6; // New notch filter
-  float _stop_band_freq;
-  float _stop_band_bandwidth;
   float _host_freq;
 
   // Rec/Dec/Dem/Fil State vars

@@ -1063,10 +1063,7 @@ void Mainwin::set_fsamp(unsigned int fsamp, bool symm) {
   _spect->_f0 = _f0 = _fmin;
   _spect->_f1 = _f1 = _fmax;
   _fc = 0.5 * (_fmin + _fmax);
-  //_fm = 0.001 * fsamp; // 48 Hz resolution if samplerate is 48000
-  //_fm = 0.0001 * fsamp; // 4.8 Hz resolution
-  //_fm = 0.00001 * fsamp; // 0.48 Hz resolution
-  _fm = 1.0f;
+  _fm = 1.0f;  // graph-range resolution
 
   _bmin = 2 * fsamp / FFT_MAX;
   _bmax = 2 * fsamp / FFT_MIN;
@@ -2173,7 +2170,6 @@ void Mainwin::toggle_csv_accumulation(void) {
     time_t start_time = time(nullptr);
     if (_dt_sched > 0.0f) {
       start_time += (time_t)(_dt_sched * 60.0f);
-      //_csv_start_countdown = (long long)(_dt_sched * 60.0f * _fsamp);
       float frames_per_sec =
           (_ipmod * INP_LEN > 0) ? ((float)_fsamp / (_ipmod * INP_LEN)) : 1.0f;
       _csv_start_countdown = (long long)(_dt_sched * 60.0f * frames_per_sec);
@@ -2521,10 +2517,6 @@ void Mainwin::update_demulator(void) {
       _rec_capture_type, _rec_file_type, update_action, _fsamp, _host_freq,
       _cutoff_freq, _decimation_factor);
 
-  // We are not processing a file
-  // strncpy(update_info->_rec_filename, _rec_filename, 126);
-  // update_info->_rec_filename[127] = '\0';
-
   update_info->_sb_f1 = _sb_f1;
   update_info->_sb_f2 = _sb_f2;
   update_info->_sb_bw1 = _sb_bw1;
@@ -2636,6 +2628,7 @@ int Mainwin::create_cue_file(const char* wav_filename, int duration_seconds, int
     }
 
     fclose(cue_file);
+    // TODO: make tutorial
     // shnsplit -f album.cue -o wav -t "%n - %t" album.wav
     // shnsplit -f album.cue -o wav -t "%p - %n - %t" album.wav
     // %n: Track number (automatically padded with a zero, e.g., 01, 02)
