@@ -98,6 +98,26 @@ public:
   void handle_term(void) { _running = 0; }
   void handle_mesg(ITC_mesg *);
 
+  bool is_csv_busy(void);
+  bool is_wav_busy(void);
+  bool is_capture_busy(void);
+  void stop_video_avg(void);
+  void start_video_avg(void);
+  void stop_video_peakh(void);
+  void start_video_peakh(void);
+  void toggle_video_avg(void);
+  void toggle_video_peakh(void);
+
+  void enable_ulf(void);
+  void disable_ulf(void);
+  void toggle_ulf(void);
+  void enable_elf(void);
+  void disable_elf(void);
+  void toggle_elf(void);
+  void enable_usb(void);
+  void disable_usb(void);
+  void toggle_usb(void);
+
 private:
   enum {
     IP1,

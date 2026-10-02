@@ -94,7 +94,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _dt_amnt = 5;
 
   _decimation_factor = 5;
-  _cutoff_freq = 6000.0f;
+  _cutoff_freq = 16384.0f;
 
   _rec_start_countdown = 0;
   _rec_samples_remaining = 0;
@@ -132,7 +132,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
 
   // --- GUI controls configuration ---
   x = XDEF - RMAR + 3;
-  y = 15;
+  y = 13;
   // Input buttons
   _butt[IP1] = new X_tbutton(this, this, &Bst0, x, y, "1", 0, IP1);
   _butt[IP2] = new X_tbutton(this, this, &Bst0, x + 19, y, "2", 0, IP2);
@@ -156,7 +156,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[PEAKH] = new X_tbutton(this, this, &Bst1, x, y, "Peak Hold", 0, PEAKH);
   y += Bst1.size.y;
   _butt[FREEZ] = new X_tbutton(this, this, &Bst1, x, y, "Freeze", 0, FREEZ);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 13;
 
   // Markers
   Bst1.size.x = RMAR - 43;
@@ -166,7 +166,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   y += Bst1.size.y;
   Bst1.size.x = RMAR - 6;
   _butt[MCLR] = new X_tbutton(this, this, &Bst1, x, y, "Clear", 0, MCLR);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 13;
 
 
   // Scalling and frequency controls
@@ -178,7 +178,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[FCENT] = new X_tbutton(this, this, &Bst1, x, y, "Cent", 0, FCENT);
   //y += Bst1.size.y;
   _butt[FSPAN] = new X_tbutton(this, this, &Bst1, x+37, y, "Span", 0, FSPAN);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 13;
 
   Bst1.size.x = RMAR - 6;
 
@@ -186,7 +186,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   _butt[AMAX] = new X_tbutton(this, this, &Bst1, x, y, "Max", 0, AMAX);
   y += Bst1.size.y;
   _butt[ASPAN] = new X_tbutton(this, this, &Bst1, x, y, "Range", 0, ASPAN);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   // Heterodyning
   Bst1.size.x = RMAR - 55;
@@ -197,7 +197,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   //y += Bst1.size.y;
   _butt[ELF_MOD] =
       new X_tbutton(this, this, &Bst1, x+50, y, "ELF", 0, ELF_MOD);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   Bst1.size.x = RMAR - 6;
 
@@ -213,7 +213,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   y += Bst1.size.y;
   _butt[DT_START_STOP] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, DT_START_STOP);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   // Demulating
   _butt[HOSTF] = new X_tbutton(this, this, &Bst1, x, y, "Host Freq", 0, HOSTF);
@@ -282,7 +282,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
       new X_tbutton(this, this, &Bst1, x, y, "Decimate", 0, REC_DEC);
   y += Bst1.size.y;
   _butt[DEM_UDT] = new X_tbutton(this, this, &Bst1, x, y, "Apply", 0, DEM_UDT);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   // Recording
   _butt[SCHED] = new X_tbutton(this, this, &Bst1, x, y, "Start Time", 0, SCHED);
@@ -291,13 +291,13 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   y += Bst1.size.y;
   _butt[REC_STOP] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, REC_STOP);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   _butt[REC_CUE] = new X_tbutton(this, this, &Bst1, x, y, "Make .cue", 0, REC_CUE);
   y += Bst1.size.y;
   _butt[DUAL_REC] =
       new X_tbutton(this, this, &Bst1, x, y, "Start/Stop", 0, DUAL_REC);
-  y += Bst1.size.y + 15;
+  y += Bst1.size.y + 12;
 
   // Text input
   _txt1 = new X_textip(this, this, &Tst1, x, y, RMAR - 6, 18, 16);
@@ -307,7 +307,7 @@ Mainwin::Mainwin(X_window *parent, X_resman *xres, ITC_ctrl *audio)
   // Initializing buttons
   Bst0.size.x = 15;
   Bst0.size.y = 15;
-  y += 22;
+  y += 18;
   _butt[BTDN] = new X_ibutton(this, this, &Bst0, x + RMAR - 38, y,
                               disp()->image1515(X_display::IMG_LT), BTDN);
   _butt[BTUP] = new X_ibutton(this, this, &Bst0, x + RMAR - 23, y,
@@ -636,28 +636,11 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       break;
 
     case VIDAV:
-      // Video averaging logic
-      if (B->stat()) {
-        B->set_stat(0);
-        _spect->_avcnt = 0;
-      } else {
-        B->set_stat(2);
-        _butt[PEAKH]->set_stat(0);
-        _spect->_avcnt = 1;
-        _spect->_bits &= ~Spectdata::PEAKH;
-      }
+      toggle_video_avg();
       break;
 
     case PEAKH:
-      if (B->stat()) {
-        B->set_stat(0);
-        _spect->_bits &= ~Spectdata::PEAKH;
-      } else {
-        B->set_stat(2);
-        _butt[VIDAV]->set_stat(0);
-        _spect->_bits |= Spectdata::PEAKH;
-        _spect->_avcnt = 0;
-      }
+      toggle_video_peakh();
       break;
 
     case FREEZ:
@@ -721,7 +704,7 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       set_param(TIMER);
       break;
     case REC_CUE:
-      if (!(_is_recording || _is_accumulating_csv || _is_scheduled_csv_acc || _rec_scheduled)) {
+      if (!is_capture_busy()) {
         if (B->stat()){
           B->set_stat(0);
           _is_cue_required = false;
@@ -744,7 +727,7 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
         }
       break;
     case REC_STOP:
-      if (_is_recording || _rec_scheduled) {
+      if (is_wav_busy()) {
         _is_cue_required = false;
       }
       toggle_recording();
@@ -753,8 +736,7 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       if (_is_recording != _is_accumulating_csv){
         return;
       }
-      if (_is_recording || _rec_scheduled || _is_accumulating_csv ||
-            _is_scheduled_csv_acc) {
+      if (is_capture_busy()) {
         _is_cue_required = false;
         _is_looping_csv = false;
         _butt[DT_LOOP]->set_stat(0);
@@ -763,106 +745,16 @@ void Mainwin::handle_callb(int k, X_window *W, _XEvent *E) {
       toggle_dual_recording();
       break;
     case DEM_UDT:
-      if (!(_is_recording || _rec_scheduled || _is_accumulating_csv ||
-            _is_scheduled_csv_acc)) {
-        update_demulator();
-      } else {
-        fprintf(
-            stderr,
-            "Error: You cannot update demulation settings while Recording\n");
-      }
+      update_demulator();
       break;
     case DMOD:
-      _is_lsb_view = !_is_lsb_view;
-      if (_is_lsb_view) {
-        _f0 = 0.0f;
-        if (_alias_host_freq > 0){
-          set_f1(_alias_host_freq);
-        } else{
-          set_f1(_host_freq);
-        }
-        set_bw(93.75f);
-        set_param(BANDW);
-        _butt[DMOD]->set_stat(2);
-        _butt[ELF_MOD]->set_stat(0);
-        _butt[ULF_MOD]->set_stat(0);
-
-        _butt[VIDAV]->set_stat(0);
-        _spect->_avcnt = 0;
-      } else {
-        _f0 = 0.0f;
-        set_f1(_fmax);
-        set_bw(375.0f);
-        set_param(BANDW);
-        _butt[DMOD]->set_stat(0);
-      }
-      update_demulator();
+      toggle_usb();
       break;
     case ULF_MOD:
-
-      if (_butt[ULF_MOD]->stat()) {
-        _f0 = 0.0f;
-        set_f1(_fmax);
-        set_bw(46.875f);
-        set_param(BANDW);
-        _butt[ULF_MOD]->set_stat(0);
-
-        _butt[VIDAV]->set_stat(0);
-        _spect->_avcnt = 0;
-
-      } else {
-        _f0 = 0.0f;
-        set_f1(10.0f);
-        set_bw(0.37f);
-        set_param(BANDW);
-        _butt[ULF_MOD]->set_stat(2);
-        _butt[ELF_MOD]->set_stat(0);
-        _is_lsb_view = false;
-        _butt[DMOD]->set_stat(0);
-
-        set_vamax(20.0f);
-
-        _butt[VIDAV]->set_stat(2);
-        _butt[PEAKH]->set_stat(0);
-        _spect->_avcnt = 1;
-        _spect->_bits &= ~Spectdata::PEAKH;
-
-        set_cutoff(12.0f);
-
-      }
-      update_demulator();
+      toggle_ulf();
       break;
     case ELF_MOD:
-      if (_butt[ELF_MOD]->stat()) {
-        _f0 = 0.0f;
-        set_f1(_fmax);
-        set_bw(46.875f);
-        set_param(BANDW);
-        _butt[ELF_MOD]->set_stat(0);
-
-        _butt[VIDAV]->set_stat(0);
-        _spect->_avcnt = 0;
-
-      } else {
-        _f0 = 0.0f;
-        set_f1(40.0f);
-        set_bw(0.73f);
-        set_param(BANDW);
-        _butt[ELF_MOD]->set_stat(2);
-        _butt[ULF_MOD]->set_stat(0);
-        _is_lsb_view = false;
-        _butt[DMOD]->set_stat(0);
-        set_vamax(20.0f);
-
-        _butt[VIDAV]->set_stat(2);
-        _butt[PEAKH]->set_stat(0);
-        _spect->_avcnt = 1;
-        _spect->_bits &= ~Spectdata::PEAKH;
-
-        set_cutoff(42.0f);
-
-      }
-      update_demulator();
+      toggle_elf();
       break;
     }
     break;
@@ -915,35 +807,35 @@ void Mainwin::redraw(void) {
   // Title
   D.move(_xs - RMAR + 2, 10);
   D.drawstring("    ---Input---", -1);
-  D.move(_xs - RMAR + 2, 60);
+  D.move(_xs - RMAR + 2, 59);
   D.drawstring("Analyser", -1);
-  D.move(_xs - RMAR + 2, 160);
+  D.move(_xs - RMAR + 2, 157);
   D.drawstring("Markers", -1);
-  D.move(_xs - RMAR + 2, 210);
+  D.move(_xs - RMAR + 2, 204);
   D.drawstring("Frequency", -1);
-  D.move(_xs - RMAR + 2, 260);
+  D.move(_xs - RMAR + 2, 251);
   D.drawstring("Amplitude", -1);
-  D.move(_xs - RMAR + 2, 307);
+  D.move(_xs - RMAR + 2, 298);
   D.drawstring("View Types", -1);
-  D.move(_xs - RMAR + 2, 340);
+  D.move(_xs - RMAR + 2, 327);
   D.drawstring("Export CSV", -1);
-  D.move(_xs - RMAR + 2, 440);
+  D.move(_xs - RMAR + 2, 424);
   D.drawstring("Demulating", -1);
-  D.move(_xs - RMAR + 2, 622);
+  D.move(_xs - RMAR + 2, 606);
   D.drawstring("WAV Recorder", -1);
-  D.move(_xs - RMAR + 2, 692);
+  D.move(_xs - RMAR + 2, 669);
   D.drawstring("Sync Rec", -1);
-  D.move(_xs - RMAR + 2, 740);
+  D.move(_xs - RMAR + 2, 715);
   D.drawstring("Curr value", -1);
-  D.move(_xs - RMAR + 2, 770);
+  D.move(_xs - RMAR + 2, 745);
   D.drawstring("Dec/Inc", -1);
-  D.move(_xs - RMAR + 2, 790);
+  D.move(_xs - RMAR + 2, 763);
   D.drawstring("   ---Output---", -1);
-  D.move(_xs - RMAR + 2, 850);
+  D.move(_xs - RMAR + 2, 820);
   D.drawstring("Noise", -1);
-  D.move(_xs - RMAR + 2, 888);
+  D.move(_xs - RMAR + 2, 858);
   D.drawstring("Sine1", -1);
-  D.move(_xs - RMAR + 2, 928);
+  D.move(_xs - RMAR + 2, 898);
   D.drawstring("Sine2", -1);
 
   plot_fscale();
@@ -1067,7 +959,7 @@ void Mainwin::set_fsamp(unsigned int fsamp, bool symm) {
 
   _bmin = 2 * fsamp / FFT_MAX;
   _bmax = 2 * fsamp / FFT_MIN;
-  set_bw(_bmax / 8);
+  set_bw(_bmax / 4);
 
   _amin = -200;
   _amax = 10;
@@ -1322,6 +1214,132 @@ void Mainwin::mod_param(bool inc) {
       set_rec_dt(_p_val + (_p_val + 1) / 10);
     }else{
       set_rec_dt(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF1:
+    if (inc) {
+      set_sbf1(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf1(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF2:
+    if (inc) {
+      set_sbf2(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf2(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF3:
+    if (inc) {
+      set_sbf3(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf3(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF4:
+    if (inc) {
+      set_sbf4(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf4(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF5:
+    if (inc) {
+      set_sbf5(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf5(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBF6:
+    if (inc) {
+      set_sbf6(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbf6(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW1:
+    if (inc) {
+      set_sbbw1(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw1(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW2:
+    if (inc) {
+      set_sbbw2(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw2(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW3:
+    if (inc) {
+      set_sbbw3(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw3(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW4:
+    if (inc) {
+      set_sbbw4(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw4(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW5:
+    if (inc) {
+      set_sbbw5(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw5(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBBW6:
+    if (inc) {
+      set_sbbw6(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbbw6(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN1:
+    if (inc) {
+      set_sbgn1(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn1(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN2:
+    if (inc) {
+      set_sbgn2(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn2(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN3:
+    if (inc) {
+      set_sbgn3(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn3(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN4:
+    if (inc) {
+      set_sbgn4(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn4(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN5:
+    if (inc) {
+      set_sbgn5(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn5(_p_val - (_p_val + 1) / 10);
+    }
+    break;
+  case SBGN6:
+    if (inc) {
+      set_sbgn6(_p_val + (_p_val + 1) / 10);
+    }else{
+      set_sbgn6(_p_val - (_p_val + 1) / 10);
     }
     break;
   }
@@ -2023,19 +2041,13 @@ void Mainwin::accumulate_csv_data(void) {
     _butt[DT_START_STOP]->set_stat(2);
 
     // activate Averaging
-    _butt[VIDAV]->set_stat(2);
-    _butt[PEAKH]->set_stat(0);
-    _spect->_avcnt = 1;
-    _spect->_bits &= ~Spectdata::PEAKH;
+    start_video_avg();
   }
 
   if (_is_accumulating_csv && _current_pass_count == 0 &&
       _inter_samples_count == 0 && _csv_loop_cnt == 0 && !_butt[VIDAV]->stat()) {
     // activate Averaging
-    _butt[VIDAV]->set_stat(2);
-    _butt[PEAKH]->set_stat(0);
-    _spect->_avcnt = 1;
-    _spect->_bits &= ~Spectdata::PEAKH;
+    start_video_avg();
     _inter_samples_count++;
     return;
   }
@@ -2080,8 +2092,7 @@ void Mainwin::stop_and_save_csv(void) {
 
   if (!_is_looping_csv){
     // Stop averaging
-    _butt[VIDAV]->set_stat(0);
-    _spect->_avcnt = 0;
+    stop_video_avg();
     _butt[DT_START_STOP]->set_stat(0);
   }
   export_to_csv();
@@ -2155,7 +2166,7 @@ void Mainwin::export_to_csv(const char *filename_override) {
 }
 
 void Mainwin::toggle_csv_accumulation(void) {
-  if (_is_accumulating_csv || _is_scheduled_csv_acc) {
+  if (is_csv_busy()) {
     stop_and_save_csv();
     if (_is_cue_required && _is_recording && (_current_pass_count < _max_pass_count) && _is_looping_csv) {
       // TODO: recalculate duration (we manually stopped it)
@@ -2509,6 +2520,10 @@ void Mainwin::toggle_dual_recording(void) {
 }
 
 void Mainwin::update_demulator(void) {
+  if (is_capture_busy()){
+    fprintf(stderr, "Demulator Update failed\n");
+    return;
+  }
   int update_action = 2;
 
   // prepare Msg

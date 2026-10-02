@@ -33,15 +33,11 @@ void Mainwin::set_bw(float bw) {
 
 void Mainwin::set_vamax(float avmax) {
   if (avmax >= 2 && avmax <= 100000) {
-    if (_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc) {
-      fprintf(stderr, "Error: You cannot update wave averanging "
-                      "settings while Recording\n");
-    } else {
+    if (!is_capture_busy()) {
       _spect->_avmax = avmax;
       //_p_val = _spect->_avmax; // show_param(AVMAX) reads _spect->_avmax directly (We may not need to update _p_val)
       if (_butt[VIDAV]->stat()) {
-        _spect->_avcnt = 1;
-        _spect->_bits &= ~Spectdata::PEAKH;
+        start_video_avg();
       }
       redraw();
     }
@@ -143,7 +139,7 @@ void Mainwin::set_dt_amnt(float dt_amnt){
 }
 
 void Mainwin::set_host_f(float host_freq) {
-  if (host_freq >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+  if (host_freq >= 0.0f && !is_capture_busy()) {
     _alias_host_freq = 0.0f;
     if (host_freq > _fmax) {
       fprintf(stderr, "Error: Maximun host frequency is %2.1lf kHz\n", _fmax);
@@ -161,14 +157,11 @@ void Mainwin::set_host_f(float host_freq) {
     }
     _p_val = _host_freq;
     redraw();
-  } else {
-    fprintf(stderr, "Error: You cannot update Host frequency settings "
-                    "while Recording\n");
   }
 }
 
 void Mainwin::set_rec_dec(float rec_dec) {
-  if (rec_dec >= 1.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+  if (rec_dec >= 1.0f && !is_capture_busy()){
     if (rec_dec > _fmax) {
       rec_dec = _fmax;
       fprintf(stderr, "Error: Maximun decimation factor is %5.1lf\n", _fmax);
@@ -176,14 +169,11 @@ void Mainwin::set_rec_dec(float rec_dec) {
     _decimation_factor = (int)rec_dec;
     _p_val = rec_dec;
     redraw();
-  } else {
-    fprintf(stderr, "Error: You cannot update decimation settings "
-                    "while Recording\n");
   }
 }
 
 void Mainwin::set_cutoff(float cutoff) {
-  if (cutoff >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+  if (cutoff >= 0.0f && !is_capture_busy()) {
     if (cutoff > _fmax) {
       cutoff = _fmax;
       fprintf(stderr, "Error: Maximun cutoff frequency is %2.1lf kHz\n", _fmax);
@@ -191,14 +181,11 @@ void Mainwin::set_cutoff(float cutoff) {
     _cutoff_freq = cutoff;
     _p_val = _cutoff_freq;
     redraw();
-  } else {
-    fprintf(stderr, "Error: You cannot update cutoff frequency "
-                    "settings while Recording\n");
   }
 }
 
 void Mainwin::set_sched(float sched) {
-  if (sched >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+  if (sched >= 0.0f && !is_capture_busy()) {
     if (sched > 528000) {
       sched = 528000;
       fprintf(stderr, "Error: Maximun programable time is 528000 mins\n");
@@ -214,13 +201,11 @@ void Mainwin::set_sched(float sched) {
       _p_val = (_rec_date_start - time(nullptr)) / 60.0f;
     }
     redraw();
-  } else {
-    fprintf(stderr, "Error: You cannot schedule a new recording while Recording\n");
   }
 }
 
 void Mainwin::set_rec_dt(float rec_dt) {
-  if (rec_dt >= 0.0f && !(_is_recording || _rec_scheduled || _is_accumulating_csv || _is_scheduled_csv_acc)) {
+  if (rec_dt >= 0.0f && !is_capture_busy()) {
     if (rec_dt > 528000) {
       rec_dt = 528000;
       fprintf(stderr, "Error: Maximun duration time is 528000 mins\n");
@@ -234,8 +219,6 @@ void Mainwin::set_rec_dt(float rec_dt) {
     _rec_samples_remaining = (long long)(rec_dt * 60.0f * frames_per_sec);
     _p_val = _rec_duration;
     redraw();
-  } else {
-    fprintf(stderr, "Error: You cannot update duration settings while Recording\n");
   }
 }
 
@@ -295,57 +278,73 @@ void Mainwin::set_f_si2(float a) {
 }
 
 void Mainwin::set_sbf1(float a) {
-  _sb_f1 = a;
+  _p_val = _sb_f1 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw1(float a) {
-  _sb_bw1 = a;
+  _p_val = _sb_bw1 = a;
+  update_demulator();
 }
 void Mainwin::set_sbgn1(float a) {
-  _sb_gain1 = a;
+  _p_val = _sb_gain1 = a;
+  update_demulator();
 }
 void Mainwin::set_sbf2(float a) {
-  _sb_f2 = a;
+  _p_val = _sb_f2 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw2(float a) {
-  _sb_bw2 = a;
+  _p_val = _sb_bw2 = a;
+  update_demulator();
 }
 void Mainwin::set_sbgn2(float a) {
-  _sb_gain2 = a;
+  _p_val = _sb_gain2 = a;
+  update_demulator();
 }
 void Mainwin::set_sbf3(float a) {
-  _sb_f3 = a;
+  _p_val = _sb_f3 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw3(float a) {
-  _sb_bw3 = a;
+  _p_val = _sb_bw3 = a;
+  update_demulator();
 }
 void Mainwin::set_sbgn3(float a) {
-  _sb_gain3 = a;
+  _p_val = _sb_gain3 = a;
+  update_demulator();
 }
 void Mainwin::set_sbf4(float a) {
-  _sb_f4 = a;
+  _p_val = _sb_f4 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw4(float a) {
-  _sb_bw4 = a;
+  _p_val = _sb_bw4 = a;
 }
 void Mainwin::set_sbgn4(float a) {
-  _sb_gain4 = a;
+  _p_val = _sb_gain4 = a;
+  update_demulator();
 }
-
 void Mainwin::set_sbf5(float a) {
-  _sb_f5 = a;
+  _p_val = _sb_f5 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw5(float a) {
-  _sb_bw5 = a;
+  _p_val = _sb_bw5 = a;
+  update_demulator();
 }
 void Mainwin::set_sbgn5(float a) {
-  _sb_gain5 = a;
+  _p_val = _sb_gain5 = a;
+  update_demulator();
 }
 void Mainwin::set_sbf6(float a) {
-  _sb_f6 = a;
+  _p_val = _sb_f6 = a;
+  update_demulator();
 }
 void Mainwin::set_sbbw6(float a) {
-  _sb_bw6 = a;
+  _p_val = _sb_bw6 = a;
+  update_demulator();
 }
 void Mainwin::set_sbgn6(float a) {
-  _sb_gain6 = a;
+  _p_val = _sb_gain6 = a;
+  update_demulator();
 }
